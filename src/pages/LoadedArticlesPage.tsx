@@ -1,5 +1,5 @@
 import React from 'react';
-import loadArticles from '../components/articleLoader';
+import { loadArticles } from '../services/adapters/loadArticles';
 
 const LoadedArticlesPage: React.FC = () => {
     const articles = loadArticles();

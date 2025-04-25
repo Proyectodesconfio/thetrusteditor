@@ -6,7 +6,7 @@ import EntityMetrics from '../components/EntityMetrics';
 import SentimentAnalysis from '../components/SentimentAnalysis';
 import { mockEntityMetrics } from '../data/mockData';
 import { calculateMetrics } from '../components/articleAnalytics';
-import loadArticles from '../components/articleLoader';
+import { loadArticles } from '../services/adapters/loadArticles';
 import HomeMetrics from '../components/HomeMetrics';
 
 const ARTICLES_PER_PAGE = 10;

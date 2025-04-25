@@ -1,4 +1,3 @@
-import loadArticles from './articleLoader';
 import { Article } from '../types';
 
 interface Metrics {

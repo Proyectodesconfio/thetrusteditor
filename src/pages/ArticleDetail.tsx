@@ -5,7 +5,7 @@ import ArticleContent from '../components/ArticleContent';
 import EntityMetrics from '../components/EntityMetrics';
 import AdjectivesMetrics from '../components/AdjectivesMetrics';
 import SourcesMetrics from '../components/SourcesMetrics';
-import loadArticles from '../components/articleLoader';
+import { loadArticles } from '../services/adapters/loadArticles';
 import EntityMetricsSimple from '../components/EntityMetricsSimple';
 import AdjectivesMetricsSimple from '../components/AdjectivesMetricsSimple';
 
