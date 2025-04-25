@@ -1,0 +1,1005 @@
+[{
+    "adjectives": {
+      "adjectives": {
+        "adjectives_freq": [
+        [
+          "bueno",
+          6
+        ],
+        [
+          "mejor",
+          2
+        ],
+        [
+          "contento",
+          2
+        ],
+        [
+          "seguidos",
+          2
+        ],
+        [
+          "igual",
+          2
+        ],
+        [
+          "local",
+          1
+        ],
+        [
+          "doble",
+          1
+        ],
+        [
+          "ilusionados",
+          1
+        ],
+        [
+          "duros",
+          1
+        ],
+        [
+          "enfocados",
+          1
+        ],
+        [
+          "cercano",
+          1
+        ],
+        [
+          "primer",
+          1
+        ],
+        [
+          "necesario",
+          1
+        ],
+        [
+          "principales",
+          1
+        ],
+        [
+          "valorable",
+          1
+        ],
+        [
+          "mala",
+          1
+        ],
+        [
+          "dura",
+          1
+        ],
+        [
+          "desprevenido",
+          1
+        ],
+        [
+          "conscientes",
+          1
+        ],
+        [
+          "corto",
+          1
+        ],
+        [
+          "argentino",
+          1
+        ],
+        [
+          "irregular",
+          1
+        ],
+        [
+          "tranquilo",
+          1
+        ],
+        [
+          "junto",
+          1
+        ],
+        [
+          "físicas",
+          1
+        ],
+        [
+          "físico",
+          1
+        ],
+        [
+          "grande",
+          1
+        ],
+        [
+          "privilegiado",
+          1
+        ],
+        [
+          "futura",
+          1
+        ],
+        [
+          "segunda",
+          1
+        ],
+        [
+          "pasado",
+          1
+        ]
+      ],
+      "adjectives_list": [
+        {
+          "end_char": 351,
+          "features": {
+            "Number": "Sing"
+          },
+          "start_char": 346,
+          "text": "local"
+        },
+        {
+          "end_char": 444,
+          "features": {
+            "Degree": "Cmp",
+            "Number": "Sing"
+          },
+          "start_char": 439,
+          "text": "mejor"
+        },
+        {
+          "end_char": 618,
+          "features": {
+            "Number": "Sing"
+          },
+          "start_char": 613,
+          "text": "doble"
+        },
+        {
+          "end_char": 751,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 746,
+          "text": "bueno"
+        },
+        {
+          "end_char": 779,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Plur",
+            "VerbForm": "Part"
+          },
+          "start_char": 768,
+          "text": "ilusionados"
+        },
+        {
+          "end_char": 799,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 791,
+          "text": "contento"
+        },
+        {
+          "end_char": 868,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Plur"
+          },
+          "start_char": 863,
+          "text": "duros"
+        },
+        {
+          "end_char": 880,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 875,
+          "text": "bueno"
+        },
+        {
+          "end_char": 1002,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Plur",
+            "VerbForm": "Part"
+          },
+          "start_char": 993,
+          "text": "enfocados"
+        },
+        {
+          "end_char": 1095,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 1088,
+          "text": "cercano"
+        },
+        {
+          "end_char": 1149,
+          "features": {
+            "Gender": "Masc",
+            "NumType": "Ord",
+            "Number": "Sing"
+          },
+          "start_char": 1143,
+          "text": "primer"
+        },
+        {
+          "end_char": 1348,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Plur",
+            "VerbForm": "Part"
+          },
+          "start_char": 1340,
+          "text": "seguidos"
+        },
+        {
+          "end_char": 1493,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 1484,
+          "text": "necesario"
+        },
+        {
+          "end_char": 1532,
+          "features": {
+            "Number": "Plur"
+          },
+          "start_char": 1521,
+          "text": "principales"
+        },
+        {
+          "end_char": 1651,
+          "features": {},
+          "start_char": 1646,
+          "text": "igual"
+        },
+        {
+          "end_char": 1659,
+          "features": {},
+          "start_char": 1654,
+          "text": "igual"
+        },
+        {
+          "end_char": 1693,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 1688,
+          "text": "bueno"
+        },
+        {
+          "end_char": 1811,
+          "features": {
+            "Number": "Sing"
+          },
+          "start_char": 1802,
+          "text": "valorable"
+        },
+        {
+          "end_char": 1862,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Plur",
+            "VerbForm": "Part"
+          },
+          "start_char": 1854,
+          "text": "seguidos"
+        },
+        {
+          "end_char": 2052,
+          "features": {
+            "Gender": "Fem",
+            "Number": "Sing"
+          },
+          "start_char": 2048,
+          "text": "mala"
+        },
+        {
+          "end_char": 2138,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2133,
+          "text": "bueno"
+        },
+        {
+          "end_char": 2183,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2178,
+          "text": "bueno"
+        },
+        {
+          "end_char": 2339,
+          "features": {
+            "Gender": "Fem",
+            "Number": "Sing"
+          },
+          "start_char": 2335,
+          "text": "dura"
+        },
+        {
+          "end_char": 2405,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing",
+            "VerbForm": "Part"
+          },
+          "start_char": 2393,
+          "text": "desprevenido"
+        },
+        {
+          "end_char": 2417,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2412,
+          "text": "bueno"
+        },
+        {
+          "end_char": 2444,
+          "features": {
+            "Number": "Plur"
+          },
+          "start_char": 2433,
+          "text": "conscientes"
+        },
+        {
+          "end_char": 2523,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2518,
+          "text": "corto"
+        },
+        {
+          "end_char": 2563,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2554,
+          "text": "argentino"
+        },
+        {
+          "end_char": 2580,
+          "features": {
+            "Number": "Sing"
+          },
+          "start_char": 2571,
+          "text": "irregular"
+        },
+        {
+          "end_char": 2616,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 2607,
+          "text": "tranquilo"
+        },
+        {
+          "end_char": 2816,
+          "features": {},
+          "start_char": 2811,
+          "text": "junto"
+        },
+        {
+          "end_char": 2874,
+          "features": {
+            "Gender": "Fem",
+            "Number": "Plur"
+          },
+          "start_char": 2867,
+          "text": "físicas"
+        },
+        {
+          "end_char": 3107,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 3101,
+          "text": "físico"
+        },
+        {
+          "end_char": 3325,
+          "features": {
+            "Number": "Sing"
+          },
+          "start_char": 3319,
+          "text": "grande"
+        },
+        {
+          "end_char": 3369,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing",
+            "VerbForm": "Part"
+          },
+          "start_char": 3357,
+          "text": "privilegiado"
+        },
+        {
+          "end_char": 3402,
+          "features": {
+            "Degree": "Cmp",
+            "Number": "Sing"
+          },
+          "start_char": 3397,
+          "text": "mejor"
+        },
+        {
+          "end_char": 3546,
+          "features": {
+            "Gender": "Fem",
+            "Number": "Sing"
+          },
+          "start_char": 3540,
+          "text": "futura"
+        },
+        {
+          "end_char": 3630,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing"
+          },
+          "start_char": 3622,
+          "text": "contento"
+        },
+        {
+          "end_char": 3645,
+          "features": {
+            "Gender": "Fem",
+            "NumType": "Ord",
+            "Number": "Sing"
+          },
+          "start_char": 3638,
+          "text": "segunda"
+        },
+        {
+          "end_char": 3797,
+          "features": {
+            "Gender": "Masc",
+            "Number": "Sing",
+            "VerbForm": "Part"
+          },
+          "start_char": 3791,
+          "text": "pasado"
+        }
+      ]
+    },
+    "entities": {
+      "entities_freq": [
+        [
+          [
+            "Vélez",
+            "Persona"
+          ],
+          4
+        ],
+        [
+          [
+            "Talleres",
+            "Organización"
+          ],
+          2
+        ],
+        [
+          [
+            "Rodríguez",
+            "Persona"
+          ],
+          2
+        ],
+        [
+          [
+            "Copa de la Liga Profesional",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Copa Argentina",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Libertadores",
+            "Organización"
+          ],
+          1
+        ],
+        [
+          [
+            "Sao Pablo-",
+            "Persona"
+          ],
+          1
+        ],
+        [
+          [
+            "Liga Profesional",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Supercopa Internacional",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "River",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Libertadores",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "CARD",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Fifa",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Libertadores",
+            "Lugar"
+          ],
+          1
+        ],
+        [
+          [
+            "Zona A",
+            "Misceláneo"
+          ],
+          1
+        ],
+        [
+          [
+            "Talleres",
+            "Lugar"
+          ],
+          1
+        ],
+        [
+          [
+            "Vvan",
+            "Persona"
+          ],
+          1
+        ],
+        [
+          [
+            "Barracas",
+            "Lugar"
+          ],
+          1
+        ],
+        [
+          [
+            "Matías Catalán",
+            "Persona"
+          ],
+          1
+        ],
+        [
+          [
+            "Ribonetto",
+            "Persona"
+          ],
+          1
+        ]
+      ],
+      "entities_list": [
+        {
+          "end_char": 22,
+          "sentiment": 2,
+          "start_char": 14,
+          "text": "Talleres",
+          "type": "Organización"
+        },
+        {
+          "end_char": 62,
+          "sentiment": 2,
+          "start_char": 35,
+          "text": "Copa de la Liga Profesional",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 89,
+          "sentiment": 2,
+          "start_char": 75,
+          "text": "Copa Argentina",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 121,
+          "sentiment": 2,
+          "start_char": 109,
+          "text": "Libertadores",
+          "type": "Organización"
+        },
+        {
+          "end_char": 153,
+          "sentiment": 2,
+          "start_char": 143,
+          "text": "Sao Pablo-",
+          "type": "Persona"
+        },
+        {
+          "end_char": 174,
+          "sentiment": 2,
+          "start_char": 158,
+          "text": "Liga Profesional",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 222,
+          "sentiment": 2,
+          "start_char": 199,
+          "text": "Supercopa Internacional",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 236,
+          "sentiment": 2,
+          "start_char": 231,
+          "text": "River",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 334,
+          "sentiment": 2,
+          "start_char": 329,
+          "text": "Vélez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 421,
+          "sentiment": 2,
+          "start_char": 409,
+          "text": "Libertadores",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 471,
+          "sentiment": 2,
+          "start_char": 462,
+          "text": "Rodríguez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 498,
+          "sentiment": 2,
+          "start_char": 494,
+          "text": "CARD",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 553,
+          "sentiment": 2,
+          "start_char": 548,
+          "text": "Vélez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 629,
+          "sentiment": 2,
+          "start_char": 625,
+          "text": "Fifa",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 712,
+          "sentiment": 0,
+          "start_char": 700,
+          "text": "Libertadores",
+          "type": "Lugar"
+        },
+        {
+          "end_char": 1011,
+          "sentiment": 0,
+          "start_char": 1006,
+          "text": "Vélez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 1051,
+          "sentiment": 0,
+          "start_char": 1045,
+          "text": "Zona A",
+          "type": "Misceláneo"
+        },
+        {
+          "end_char": 1116,
+          "sentiment": 2,
+          "start_char": 1111,
+          "text": "Vélez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 1563,
+          "sentiment": 0,
+          "start_char": 1555,
+          "text": "Talleres",
+          "type": "Lugar"
+        },
+        {
+          "end_char": 1831,
+          "sentiment": 2,
+          "start_char": 1827,
+          "text": "Vvan",
+          "type": "Persona"
+        },
+        {
+          "end_char": 2269,
+          "sentiment": 0,
+          "start_char": 2261,
+          "text": "Barracas",
+          "type": "Lugar"
+        },
+        {
+          "end_char": 2638,
+          "sentiment": 2,
+          "start_char": 2629,
+          "text": "Rodríguez",
+          "type": "Persona"
+        },
+        {
+          "end_char": 2835,
+          "sentiment": 2,
+          "start_char": 2821,
+          "text": "Matías Catalán",
+          "type": "Persona"
+        },
+        {
+          "end_char": 2902,
+          "sentiment": 2,
+          "start_char": 2893,
+          "text": "Ribonetto",
+          "type": "Persona"
+        },
+        {
+          "end_char": 3711,
+          "sentiment": 2,
+          "start_char": 3703,
+          "text": "Talleres",
+          "type": "Organización"
+        }
+      ]
+    },
+    "id": "lavoz_1",
+    "metrics": {
+      "adjectives": {
+        "num_adjectives": {
+          "full_name": "Cantidad de adjetivos en el texto",
+          "name": "num_adjectives",
+          "reference": 20,
+          "value": 40
+        },
+        "perc_adjectives": {
+          "full_name": "Porcentaje de adjetivos en el texto",
+          "name": "perc_adjectives",
+          "reference": 7.000000000000001,
+          "value": 0.24630541871921183
+        }
+      },
+      "entities": {
+        "num_entidades": {
+          "full_name": "Cantidad de entidades en el texto",
+          "name": "num_entidades",
+          "reference": 12,
+          "value": 25
+        },
+        "num_entidades_lugar": {
+          "full_name": "Cantidad de entidades Lugar en el texto",
+          "name": "num_entidades_lugar",
+          "reference": 3,
+          "value": 3
+        },
+        "num_entidades_misc": {
+          "full_name": "Cantidad de entidades Misceláneo en el texto",
+          "name": "num_entidades_misc",
+          "reference": 3,
+          "value": 9
+        },
+        "num_entidades_organizacion": {
+          "full_name": "Cantidad de entidades Organización en el texto",
+          "name": "num_entidades_organizacion",
+          "reference": 3,
+          "value": 3
+        },
+        "num_entidades_persona": {
+          "full_name": "Cantidad de entidades Persona en el texto",
+          "name": "num_entidades_persona",
+          "reference": 3,
+          "value": 10
+        }
+      },
+      "general": {
+        "num_chars": {
+          "full_name": "Cantidad de caracteres del cuerpo",
+          "name": "num_chars",
+          "reference": 1000,
+          "value": 3968
+        },
+        "num_chars_title": {
+          "full_name": "Cantidad de caracteres del título",
+          "name": "num_chars_title",
+          "reference": 30,
+          "value": 89
+        },
+        "num_sentences": {
+          "full_name": "Cantidad de oraciones",
+          "name": "num_sentences",
+          "reference": 30,
+          "value": 51
+        },
+        "num_words": {
+          "full_name": "Cantidad de palabras",
+          "name": "num_words",
+          "reference": 500,
+          "value": 812
+        }
+      },
+      "sentiment": {
+        "sentimiento_global_negativo": {
+          "full_name": "Sentimiento global positivo",
+          "name": "sentimiento_global_negativo",
+          "reference": 0.33,
+          "value": 0.036563973873853683
+        },
+        "sentimiento_global_neutro": {
+          "full_name": "Sentimiento global positivo",
+          "name": "sentimiento_global_neutro",
+          "reference": 0.33,
+          "value": 0.697954535484314
+        },
+        "sentimiento_global_positivo": {
+          "full_name": "Sentimiento global positivo",
+          "name": "sentimiento_global_positivo",
+          "reference": 0.33,
+          "value": 0.26548147201538086
+        }
+      },
+      "sources": {
+        "num_afirmaciones": {
+          "full_name": "Cantidad de citas identificadas",
+          "name": "num_afirmaciones",
+          "reference": 2,
+          "value": 1
+        },
+        "num_afirmaciones_explicitas": {
+          "full_name": "Cantidad de citas explícitas",
+          "name": "num_afirmaciones_explicitas",
+          "reference": 2,
+          "value": 1
+        },
+        "num_conectores": {
+          "full_name": "Cantidad de Conectores",
+          "name": "num_conectores",
+          "reference": 2,
+          "value": 1
+        },
+        "num_conectores_unique": {
+          "full_name": "Cantidad de Conectores Únicos",
+          "name": "num_conectores_unique",
+          "reference": 2,
+          "value": 1
+        },
+        "num_referenciados": {
+          "full_name": "Cantidad de Referenciados",
+          "name": "num_referenciados",
+          "reference": 2,
+          "value": 1
+        },
+        "num_referenciados_unique": {
+          "full_name": "Cantidad de Referenciados Únicos",
+          "name": "num_referenciados_unique",
+          "reference": 2,
+          "value": 1
+        }
+      }
+    },
+    "sentiment": {
+      "global_sentiment": [
+        "NEU",
+        0.697954535484314
+      ],
+      "highest_scoring_sentence_per_label": {
+        "NEG": {
+          "end_char": 2580,
+          "score": 0.9649368524551392,
+          "sentence": " La realidad es que el fútbol argentino es muy irregular",
+          "start_char": 2524
+        },
+        "NEU": {
+          "end_char": 1240,
+          "score": 0.8391280770301819,
+          "sentence": " Después veremos cuando llegue el tiempo",
+          "start_char": 1200
+        },
+        "POS": {
+          "end_char": 825,
+          "score": 0.9584013223648071,
+          "sentence": " Estoy muy contento con el grupo que nos tocó",
+          "start_char": 780
+        }
+      },
+      "title_sentiment": {
+        "label": "POS",
+        "scores": {
+          "NEG": 0.008031393401324749,
+          "NEU": 0.09081562608480453,
+          "POS": 0.901153028011322
+        }
+      }
+    },
+    "sources": [
+      {
+        "components": {
+          "afirmacion": {
+            "end_char": 452,
+            "label": "Afirmacion",
+            "start_char": 260,
+            "text": "“No hay una prioridad de un torneo sobre otro. Solamente pensamos en Vélez. El torneo local no lo podemos descuidar. Cuando llegue el momento de los Libertadores lo veremos de la mejor manera”"
+          },
+          "conector": {
+            "end_char": 461,
+            "label": "Conector",
+            "start_char": 454,
+            "text": "sostuvo"
+          },
+          "referenciado": {
+            "end_char": 471,
+            "label": "Referenciado",
+            "start_char": 462,
+            "text": "Rodríguez"
+          }
+        },
+        "end_char": 471,
+        "explicit": true,
+        "length": 211,
+        "pattern": "Q.VP",
+        "start_char": 260,
+        "text": "“No hay una prioridad de un torneo sobre otro. Solamente pensamos en Vélez. El torneo local no lo podemos descuidar. Cuando llegue el momento de los Libertadores lo veremos de la mejor manera”, sostuvo Rodríguez"
+      }
+    ]
+    }
+]
