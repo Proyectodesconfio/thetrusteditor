@@ -1,8 +1,19 @@
+/* ---------------------------------------------------------------------------
+ * HomeMetrics.tsx – versión corregida 🔧 (v2)
+ * Proyecto Desconfío
+ * ---------------------------------------------------------------------------
+ * Cambios respecto a la v1 del canvas:
+ *   • Rango de fechas realmente inclusivo → usamos endOfDay(range.to).
+ *   • Comentario aclaratorio en el filtro.
+ *   ⚠️ No toca nada de paginación (eso está en Home.tsx).
+ * --------------------------------------------------------------------------- */
+
+// 📦 Dependencias externas
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faUser, 
-  faLocationDot, 
-  faCalendarDays, 
+import {
+  faUser,
+  faLocationDot,
+  faCalendarDays,
   faBuilding,
   faFont,
   faLink,
@@ -11,429 +22,296 @@ import {
   faCheck,
   faClock,
   faWarning,
-  faNewspaper
+  faNewspaper,
 } from '@fortawesome/free-solid-svg-icons';
-import type { Article } from '../types';
+import { startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
 import * as d3 from 'd3';
-import { useRef, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
-interface HomeMetricsProps {
-  articles: Article[];
-}
+// 📦 Tipos propios
+import type { Article } from '../types';
 
+// 📦 Componentes internos
+import { AdjectivesHistogram } from './AdjectiveCharts';
+
+// 📦 Helpers
+import { normaliseArticleDate } from '../services/adapters/normaliseArticleDate';
+
+/* ---------------------------------------------------------------------------
+ * Configuración visual de iconos y colores
+ * --------------------------------------------------------------------------- */
 const typeConfig = {
-  Personas: { icon: faUser, color: 'text-cyan-500', bgColor: 'bg-cyan-100' },
-  Lugares: { icon: faLocationDot, color: 'text-cyan-500', bgColor: 'bg-cyan-100' },
-  Otros: { icon: faCalendarDays, color: 'text-cyan-500', bgColor: 'bg-cyan-100' },
-  Organizaciones: { icon: faBuilding, color: 'text-cyan-500', bgColor: 'bg-cyan-100' },
-};
+  Personas:       { icon: faUser,         color: 'text-cyan-500',  bgColor: 'bg-cyan-100'   },
+  Lugares:        { icon: faLocationDot,  color: 'text-cyan-500',  bgColor: 'bg-cyan-100'   },
+  Otros:          { icon: faCalendarDays, color: 'text-cyan-500',  bgColor: 'bg-cyan-100'   },
+  Organizaciones: { icon: faBuilding,     color: 'text-cyan-500',  bgColor: 'bg-cyan-100'   },
+} as const;
+
+type EntityKey = keyof typeof typeConfig;
 
 const sourceConfig = {
-  Links: { icon: faLink, color: 'text-amber-700', bgColor: 'bg-amber-100' },
-  Dichos: { icon: faQuoteLeft, color: 'text-amber-700', bgColor: 'bg-amber-100' },
-  Textuales: { icon: faCalendarDays, color: 'text-amber-700', bgColor: 'bg-amber-100' },
-  Otros: { icon: faEllipsis, color: 'text-amber-700', bgColor: 'bg-amber-100' },
-};
+  Links:      { icon: faLink,      color: 'text-amber-700', bgColor: 'bg-amber-100' },
+  Dichos:     { icon: faQuoteLeft, color: 'text-amber-700', bgColor: 'bg-amber-100' },
+  Textuales:  { icon: faCalendarDays, color: 'text-amber-700', bgColor: 'bg-amber-100' },
+  Otros:      { icon: faEllipsis,   color: 'text-amber-700', bgColor: 'bg-amber-100' },
+} as const;
+
+type SourceKey = keyof typeof sourceConfig;
 
 const statusConfig = {
-  Autores: { icon: faUser, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  Artículos: { icon: faNewspaper, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  Revisados: { icon: faCheck, color: 'text-green-600', bgColor: 'bg-green-100' },
-  Pendientes: { icon: faClock, color: 'text-amber-500', bgColor: 'bg-amber-100' },
-  'Sin revisión': { icon: faWarning, color: 'text-red-500', bgColor: 'bg-red-100' },
-};
+  Autores:      { icon: faUser,      color: 'text-blue-600',   bgColor: 'bg-blue-100'   },
+  Artículos:    { icon: faNewspaper, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
+  Revisados:    { icon: faCheck,     color: 'text-green-600',  bgColor: 'bg-green-100'  },
+  Pendientes:   { icon: faClock,     color: 'text-amber-500',  bgColor: 'bg-amber-100'  },
+  'Sin revisión': { icon: faWarning, color: 'text-red-500',    bgColor: 'bg-red-100'    },
+} as const;
 
-// Componente específico para el gráfico de distribución
-const AdjectivesDistribution = ({ articles }) => {
-  const svgRef = useRef(null);
-  const containerRef = useRef(null);
+type StatusKey = keyof typeof statusConfig;
 
-  useEffect(() => {
-    if (!articles.length || !containerRef.current) return;
+/* ---------------------------------------------------------------------------
+ * Interfaces de props
+ * --------------------------------------------------------------------------- */
+interface HomeMetricsProps {
+  articles: Article[];
+  /** Rango actual del date-picker (puede ser null). */
+  range?: {
+    from: Date | null;
+    to: Date | null;
+  };
+}
 
-    const containerWidth = containerRef.current.getBoundingClientRect().width;
-    const percentages = articles.map(article => 
-      (article.metrics?.adjectives.perc_adjectives.value || 0) * 100
+/* ---------------------------------------------------------------------------
+ * Componente principal
+ * --------------------------------------------------------------------------- */
+export default function HomeMetrics({
+  articles,
+  range = { from: null, to: null }, // valor por defecto para evitar undefined
+}: HomeMetricsProps) {
+  /* ───────────────────────────────────────────────────────────────────────
+   * 1. Filtrado por rango de fechas (dentro de `useMemo` para performance)
+   *      ▸ Ahora usamos endOfDay(range.to) => inclusivo por la derecha.
+   * ─────────────────────────────────────────────────────────────────────*/
+  const articlesByDate = useMemo(() => {
+    if (!range?.from || !range?.to) return articles;
+
+    const start = startOfDay(range.from);
+    const end   = endOfDay(range.to);   // ← cambio sustancial
+
+    return articles.filter((a) => {
+      try {
+        const artDate = normaliseArticleDate(a.fecha);
+        // isBefore/isAfter excluyen fechas iguales; usamos negación doble
+        return artDate
+          ? !isBefore(artDate, start) && !isAfter(artDate, end)
+          : false; // fecha no válida → descartada
+      } catch {
+        return false; // error al parsear → descartada
+      }
+    });
+  }, [articles, range?.from, range?.to]);
+
+  /* ───────────────────────────────────────────────────────────────────────
+   * 2. Cálculo de métricas  – hooks estables
+   * ─────────────────────────────────────────────────────────────────────*/
+  const entityMetrics = useMemo(() => {
+    return articlesByDate.reduce(
+      (acc, article) => {
+        article.entities?.entities_list?.forEach((e) => {
+          switch (e.type) {
+            case 'Persona':       acc.Personas++;       break;
+            case 'Lugar':         acc.Lugares++;        break;
+            case 'Misceláneo':    acc.Otros++;          break;
+            case 'Organización':  acc.Organizaciones++; break;
+          }
+        });
+        return acc;
+      },
+      { Personas: 0, Lugares: 0, Otros: 0, Organizaciones: 0 },
     );
+  }, [articlesByDate]);
 
-    // Aumentamos el alto del SVG
-    const width = containerWidth;
-    const height = 60;  // Aumentamos la altura
-    const margin = { top: 20, right: 0, bottom: 10, left: 0 };  // Más espacio arriba
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
+  const adjectivesTotal = useMemo(() =>
+    articlesByDate.reduce(
+      (t, a) => t + (a.metrics?.adjectives?.num_adjectives?.value ?? 0),
+      0,
+    ), [articlesByDate]);
 
-    // Calcular estadísticas
-    const median = d3.median(percentages);
-    const max = d3.max(percentages);
-
-    // Escalas
-    const xScale = d3.scaleLinear()
-      .domain([0, 100])
-      .range([0, innerWidth]);
-
-    // Limpiar SVG existente
-    d3.select(svgRef.current).selectAll("*").remove();
-
-    // Crear SVG
-    const svg = d3.select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Dibujar barra base
-    svg.append("rect")
-      .attr("class", "base-bar")
-      .attr("x", 0)
-      .attr("y", innerHeight / 2 - 2)
-      .attr("width", innerWidth)
-      .attr("height", 4)  // Mismo grosor que las barras de entidades
-      .attr("rx", 2)
-      .attr("fill", "#E9D5FF");
-
-    // Dibujar puntos para cada artículo
-    percentages.forEach(p => {
-      svg.append("circle")
-        .attr("cx", xScale(p))
-        .attr("cy", innerHeight / 2)
-        .attr("r", 3)
-        .attr("fill", "#A855F7");
-    });
-
-    // Dibujar línea de mediana con el mismo grosor
-    svg.append("line")
-      .attr("x1", xScale(median))
-      .attr("x2", xScale(median))
-      .attr("y1", 5)  // Empezamos un poco más abajo del texto
-      .attr("y2", innerHeight)
-      .attr("stroke", "#A855F7")
-      .attr("stroke-width", 4);  // Mismo grosor que las barras
-
-    // Ajustamos la posición del texto
-    svg.append("text")
-      .attr("x", xScale(median))
-      .attr("y", 0)  // Posición más arriba
-      .attr("text-anchor", "middle")
-      .attr("font-size", "12px")
-      .attr("fill", "#6B7280")
-      .text(`Mediana ${median.toFixed(1)}%`);
-
-  }, [articles]);
-
-  return (
-    <div ref={containerRef} className="w-full">
-      <svg ref={svgRef} />
-    </div>
-  );
-};
-
-const AdjectivesHistogram = ({ articles }) => {
-  const svgRef = useRef(null);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (!articles.length || !containerRef.current) return;
-
-    const containerWidth = containerRef.current.getBoundingClientRect().width;
-    const percentages = articles
-      .map(article => (article.metrics?.adjectives.perc_adjectives.value || 0) * 100)
-      .filter(value => value <= 100);
-
-    const bins = Array(20).fill(0);
-    percentages.forEach(p => {
-      const binIndex = Math.min(Math.floor(p / 5), 19);
-      bins[binIndex]++;
-    });
-
-    const maxBinCount = Math.max(...bins);
-
-    const width = containerWidth;
-    const height = 100;
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 }; // Agregamos márgenes laterales
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-
-    // Escalas
-    const xScale = d3.scaleLinear()
-      .domain([0, 100])
-      .range([0, innerWidth]);
-
-    const yScale = d3.scaleLinear()
-      .domain([0, maxBinCount])
-      .range([innerHeight, 0]);
-
-    // Limpiar SVG existente
-    d3.select(svgRef.current).selectAll("*").remove();
-
-    // Crear SVG
-    const svg = d3.select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Dibujar las barras del histograma
-    bins.forEach((count, i) => {
-      svg.append("rect")
-        .attr("x", xScale(i * 5))
-        .attr("y", yScale(count))
-        .attr("width", innerWidth / 20 - 1)
-        .attr("height", innerHeight - yScale(count))
-        .attr("fill", "#A855F7")
-        .attr("fill-opacity", "0.35")  // 65% transparente
-        .attr("rx", 2);
-    });
-
-    // Dibujar eje X
-    svg.append("line")
-      .attr("x1", 0)
-      .attr("x2", innerWidth)
-      .attr("y1", innerHeight)
-      .attr("y2", innerHeight)
-      .attr("stroke", "#6B7280")  // Cambiado a gray
-      .attr("stroke-width", 1);
-
-    // Marcas en el eje X
-    [0, 50, 100].forEach(value => {
-      // Línea vertical sutil
-      svg.append("line")
-        .attr("x1", xScale(value))
-        .attr("x2", xScale(value))
-        .attr("y1", innerHeight)
-        .attr("y2", innerHeight + 5)
-        .attr("stroke", "#9CA3AF")
-        .attr("stroke-width", 1);
-
-      // Texto con tamaño aumentado
-      svg.append("text")
-        .attr("x", xScale(value))
-        .attr("y", innerHeight + 15)
-        .attr("text-anchor", "middle")
-        .attr("font-size", "12px") // Aumentado de 10px a 12px
-        .attr("fill", "#6B7280")
-        .text(`${value}%`);
-    });
-
-    // Calcular y dibujar la línea de mediana
-    const median = d3.median(percentages);
-    svg.append("line")
-      .attr("x1", xScale(median))
-      .attr("x2", xScale(median))
-      .attr("y1", 0)
-      .attr("y2", innerHeight)
-      .attr("stroke", "#A855F7")
-      .attr("stroke-width", 2);
-
-    // Agregar texto de mediana
-    svg.append("text")
-      .attr("x", xScale(median))
-      .attr("y", -5)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "12px")
-      .attr("fill", "#6B7280")
-      .text(`Mediana ${median.toFixed(1)}%`);
-
-  }, [articles]);
-
-  return (
-    <div ref={containerRef} className="w-full">
-      <svg ref={svgRef} />
-    </div>
-  );
-};
-
-export default function HomeMetrics({ articles }: HomeMetricsProps) {
-  // Calcular métricas de entidades
-  const entityMetrics = articles.reduce((acc, article) => {
-    if (article.entities?.entities_list) {
-      article.entities.entities_list.forEach(entity => {
-        switch(entity.type) {
-          case 'Persona': acc.Personas++; break;
-          case 'Lugar': acc.Lugares++; break;
-          case 'Misceláneo': acc.Otros++; break;  // Cambiado al tipo correcto
-          case 'Organización': acc.Organizaciones++; break;
+  // 🚧 TODO real: sustituir por métrica de fuentes auténtica
+  const sourceMetrics = useMemo(() => {
+    return articlesByDate.reduce(
+      (acc, a) => {
+        if (a.sources) {
+          acc.Links     += 2;
+          acc.Dichos    += 1;
+          acc.Textuales += 3;
+          acc.Otros     += 4;
         }
-      });
-    }
-    return acc;
-  }, { Personas: 0, Lugares: 0, Otros: 0, Organizaciones: 0 });
+        return acc;
+      },
+      { Links: 0, Dichos: 0, Textuales: 0, Otros: 0 },
+    );
+  }, [articlesByDate]);
 
-  // Calcular métricas de adjetivos
-  const adjectivesTotal = articles.reduce((total, article) => 
-    total + (article.metrics?.adjectives.num_adjectives.value || 0), 0);
+  const totalArticles = articlesByDate.length;
 
-  // Calcular métricas de fuentes
-  const sourceMetrics = articles.reduce((acc, article) => {
-    if (article.sources) {
-      // Aquí deberías procesar las fuentes según tu estructura de datos
-      acc.Links += 2; // Ejemplo, ajusta según tu lógica real
-      acc.Dichos += 1;
-      acc.Textuales += 3;
-      acc.Otros += 4;
-    }
-    return acc;
-  }, { Links: 0, Dichos: 0, Textuales: 0, Otros: 0 });
+  const totalAuthors = useMemo(() =>
+    new Set(articlesByDate.map((a) => a.autor).filter(Boolean)).size,
+    [articlesByDate]);
 
-  // Calcular métricas reales
-  const totalArticles = articles.length;
-  const totalAuthors = new Set(articles.map(article => article.autor)).size;
+  const statusMetrics = useMemo(() =>
+    articlesByDate.reduce(
+      (acc, _a, i) => {
+        if (i % 3 === 0)      acc.Revisados++;
+        else if (i % 3 === 1) acc.Pendientes++;
+        else                  acc['Sin revisión']++;
+        return acc;
+      },
+      { Revisados: 0, Pendientes: 0, 'Sin revisión': 0 } as Record<StatusKey, number>,
+    ), [articlesByDate]);
 
-  // Por ahora asignamos estados de manera aleatoria pero consistente
-  const statusMetrics = articles.reduce((acc, article, index) => {
-    // Usar el índice para asignar estados de manera determinística
-    if (index % 3 === 0) acc.Revisados++;
-    else if (index % 3 === 1) acc.Pendientes++;
-    else acc['Sin revisión']++;
-    return acc;
-  }, {
-    Revisados: 0,
-    Pendientes: 0,
-    'Sin revisión': 0
-  });
+  const entityTotal   = Object.values(entityMetrics).reduce((s, c) => s + c, 0);
+  const sourceTotal   = Object.values(sourceMetrics).reduce((s, c) => s + c, 0);
 
-  const entityTotal = Object.values(entityMetrics).reduce((sum, count) => sum + count, 0);
-  const sourceTotal = Object.values(sourceMetrics).reduce((sum, count) => sum + count, 0);
-
-  // Calcular estadísticas de adjetivos
   const adjectivesStats = useMemo(() => {
-    const percentages = articles.map(article => 
-      (article.metrics?.adjectives.perc_adjectives.value || 0) * 100
+    const perc = articlesByDate.map(
+      (a) => (a.metrics?.adjectives?.perc_adjectives?.value ?? 0) * 100,
     );
     return {
-      median: d3.median(percentages).toFixed(1),
-      max: d3.max(percentages).toFixed(1),
-      total: articles.reduce((sum, article) => 
-        sum + (article.metrics?.adjectives.num_adjectives.value || 0), 0
-      )
-    };
-  }, [articles]);
+      median: (d3.median(perc) ?? 0).toFixed(1),
+      max:    (d3.max(perc) ?? 0).toFixed(1),
+      total:  adjectivesTotal,
+    } as const;
+  }, [articlesByDate, adjectivesTotal]);
 
-  // Función auxiliar para formatear números
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-ES').format(num);
-  };
+  const nf = (n: number) => new Intl.NumberFormat('es-ES').format(n);
 
+  /* ───────────────────────────────────────────────────────────────────────
+   * 3. Salida temprana (placeholder)
+   * ─────────────────────────────────────────────────────────────────────*/
+  if (totalArticles === 0) {
+    return (
+      <p className="text-center text-gray-500">
+        No hay datos disponibles para el rango seleccionado
+      </p>
+    );
+  }
+
+  /* ───────────────────────────────────────────────────────────────────────
+   * 4. Render principal
+   * ─────────────────────────────────────────────────────────────────────*/
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-      {/* Entidades */}
+      {/* ─────────────────────── Entidades ─────────────────────── */}
       <div className="bg-white rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-medium">Entidades</h3>
-          <span className="text-cyan-500 text-2xl font-medium">{formatNumber(entityTotal)}</span>
+          <span className="text-cyan-500 text-2xl font-medium">{nf(entityTotal)}</span>
         </div>
         <div className="grid grid-cols-4 gap-4">
-          {Object.entries(entityMetrics).map(([type, count]) => {
-            const percentage = ((count / entityTotal) * 100).toFixed(1);
+          {Object.entries(entityMetrics).map(([k, c]) => {
+            const key = k as EntityKey;
+            const pct = entityTotal ? ((c / entityTotal) * 100).toFixed(1) : '0.0';
+            const cfg = typeConfig[key] ?? { icon: faEllipsis, color: 'text-gray-500' };
             return (
-              <div key={type} className="flex flex-col gap-1">
-                <FontAwesomeIcon 
-                  icon={typeConfig[type].icon} 
-                  className={`w-4 h-4 ${typeConfig[type].color}`}
-                />
+              <div key={key} className="flex flex-col gap-1">
+                <FontAwesomeIcon icon={cfg.icon} className={`w-4 h-4 ${cfg.color}`} />
                 <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">{type}</span>
+                  <span className="text-sm text-gray-500">{key}</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-sm font-medium text-gray-700">{percentage}%</span>
-                    <span className="text-xs text-gray-400">({formatNumber(count)})</span>
+                    <span className="text-sm font-medium text-gray-700">{pct}%</span>
+                    <span className="text-xs text-gray-400">({nf(c)})</span>
                   </div>
                 </div>
-                <div className={`h-1.5 ${typeConfig[type].color.replace('text', 'bg')} rounded-full`}
-                     style={{ width: `${percentage}%` }} />
+                <div
+                  className={`h-1.5 ${cfg.color.replace('text', 'bg')} rounded-full`}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Adjetivos */}
+      {/* ─────────────────────── Adjetivos ─────────────────────── */}
       <div className="bg-white rounded-lg p-6">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-2">
             <h3 className="text-xl font-medium">Adjetivos</h3>
             <FontAwesomeIcon icon={faFont} className="text-purple-500" />
           </div>
-          <span className="text-purple-500 text-2xl font-medium">
-            {formatNumber(adjectivesStats.total)}
-          </span>
+          <span className="text-purple-500 text-2xl font-medium">{nf(adjectivesStats.total)}</span>
         </div>
         <div className="w-full">
-          <AdjectivesHistogram articles={articles} />
+          {/* Histograma reutilizable */}
+          <AdjectivesHistogram articles={articlesByDate} />
         </div>
       </div>
 
-      {/* Fuentes */}
+      {/* ─────────────────────── Fuentes ─────────────────────── */}
       <div className="bg-white rounded-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-medium">Fuentes</h3>
-          <span className="text-amber-700 text-2xl font-medium">{sourceTotal}</span>
+          <span className="text-amber-700 text-2xl font-medium">{nf(sourceTotal)}</span>
         </div>
         <div className="grid grid-cols-4 gap-4">
-          {Object.entries(sourceMetrics).map(([type, count]) => (
-            <div key={type} className="flex flex-col gap-1">
-              <FontAwesomeIcon 
-                icon={sourceConfig[type].icon} 
-                className={`w-4 h-4 ${sourceConfig[type].color} mb-1`}
-              />
-              <div className="flex gap-2 items-center">
-                <span className="text-sm text-gray-500">{type}</span>
-                <span className="text-sm text-gray-400">{count}</span>
+          {Object.entries(sourceMetrics).map(([k, c]) => {
+            const key = k as SourceKey;
+            const cfg = sourceConfig[key] ?? { icon: faEllipsis, color: 'text-gray-500', bgColor: 'bg-gray-100' };
+            const pct = sourceTotal ? (c / sourceTotal) * 100 : 0;
+            return (
+              <div key={key} className="flex flex-col gap-1">
+                <FontAwesomeIcon icon={cfg.icon} className={`w-4 h-4 ${cfg.color} mb-1`} />
+                <div className="flex gap-2 items-center">
+                  <span className="text-sm text-gray-500">{key}</span>
+                  <span className="text-sm text-gray-400">{nf(c)}</span>
+                </div>
+                <div className={`w-full ${cfg.bgColor} rounded-full h-1.5`}>
+                  <div
+                    className={`h-full ${cfg.color.replace('text', 'bg')} rounded-full`} id="bar"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </div>
-              <div className={`w-full ${sourceConfig[type].bgColor} rounded-full h-1.5`}>
-                <div 
-                  className={`h-full ${sourceConfig[type].color.replace('text', 'bg')} rounded-full`}
-                  style={{ width: `${(count / sourceTotal) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Estadísticas de artículos */}
+      {/* ─────────────────── Estadísticas de artículos ─────────────────── */}
       <div className="md:col-span-3 bg-white rounded-lg p-6">
         <h3 className="text-xl font-medium mb-6">Estadísticas de artículos</h3>
         <div className="grid grid-cols-5 gap-4 items-stretch">
-          {/* Autores y Artículos */}
           {[
-            { label: 'Autores', value: totalAuthors, config: statusConfig.Autores },
-            { label: 'Artículos', value: totalArticles, config: statusConfig.Artículos }
-          ].map(({ label, value, config }) => (
+            { label: 'Autores',   value: totalAuthors,   cfg: statusConfig.Autores   },
+            { label: 'Artículos', value: totalArticles,  cfg: statusConfig.Artículos },
+          ].map(({ label, value, cfg }) => (
             <div key={label} className="flex flex-col items-center justify-center py-4">
-              <FontAwesomeIcon 
-                icon={config.icon} 
-                className={`w-8 h-8 ${config.color} mb-2`}
-              />
+              <FontAwesomeIcon icon={cfg.icon} className={`w-8 h-8 ${cfg.color} mb-2`} />
               <div className="text-center">
-                <div className="text-2xl font-semibold text-gray-900">{formatNumber(value)}</div>
+                <div className="text-2xl font-semibold text-gray-900">{nf(value)}</div>
                 <div className="text-sm text-gray-500">{label}</div>
               </div>
             </div>
           ))}
 
-          {/* Estado de revisión con fondo agrupado */}
+          {/* Sub‑panel de estados de revisión */}
           <div className="col-span-3 bg-gray-100 rounded-lg">
             <div className="grid grid-cols-3 gap-4 h-full">
-              {[
-                { label: 'Revisados', value: statusMetrics.Revisados, config: statusConfig.Revisados },
-                { label: 'Pendientes', value: statusMetrics.Pendientes, config: statusConfig.Pendientes },
-                { label: 'Sin revisión', value: statusMetrics['Sin revisión'], config: statusConfig['Sin revisión'] }
-              ].map(({ label, value, config }) => (
-                <div key={label} className="flex flex-col items-center justify-center py-4">
-                  <FontAwesomeIcon 
-                    icon={config.icon} 
-                    className={`w-8 h-8 ${config.color} mb-2`}
-                  />
-                  <div className="text-center">
-                    <div className="text-2xl font-semibold text-gray-900">{formatNumber(value)}</div>
-                    <div className="text-sm text-gray-500">{label}</div>
+              {(['Revisados', 'Pendientes', 'Sin revisión'] as StatusKey[]).map((key) => {
+                const cfg = statusConfig[key];
+                return (
+                  <div key={key} className="flex flex-col items-center justify-center py-4">
+                    <FontAwesomeIcon icon={cfg.icon} className={`w-8 h-8 ${cfg.color} mb-2`} />
+                    <div className="text-center">
+                      <div className="text-2xl font-semibold text-gray-900">{nf(statusMetrics[key])}</div>
+                      <div className="text-sm text-gray-500">{key}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>  );
 } 
