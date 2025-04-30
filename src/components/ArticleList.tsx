@@ -1,66 +1,111 @@
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
+// Ensure Article is imported correctly according to your types/index.ts structure
 import type { Article } from '../types';
 
-type ArticleStatus = 'pendiente' | 'aprobado' | 'revisar';
+/**
+ * Defines the possible display statuses for an article and their associated styling.
+ * Adjust these based on the actual values used in `Article.status`.
+ */
+type DisplayStatus = 'pendiente' | 'aprobado' | 'revisar' | 'desconocido';
 
-const getRandomStatus = (): ArticleStatus => {
-  const statuses: ArticleStatus[] = ['pendiente', 'aprobado', 'revisar'];
-  return statuses[Math.floor(Math.random() * statuses.length)];
-};
+/**
+ * Maps an article's status string to a display status and Tailwind CSS classes.
+ * Handles potential undefined status from the Article data.
+ *
+ * @param status - The status string from the Article object (e.g., "reviewed", "pending", or undefined).
+ * @returns An object containing the display status label and corresponding CSS classes.
+ */
+const getStatusConfig = (status: string | undefined): { label: DisplayStatus; color: string; bgColor: string } => {
+  // Normalize the input status (lowercase, handle undefined)
+  const normalizedStatus = status?.toLowerCase() ?? 'desconocido';
 
-const getStatusConfig = (status: ArticleStatus) => {
-  switch (status) {
-    case 'pendiente':
-      return { color: 'text-gray-500', bgColor: 'bg-gray-50' };
-    case 'aprobado':
-      return { color: 'text-green-600', bgColor: 'bg-green-50' };
-    case 'revisar':
-      return { color: 'text-red-600', bgColor: 'bg-red-50' };
+  switch (normalizedStatus) {
+    // Map potential backend statuses to display statuses
+    case 'aprobado': // Assuming 'aprobado' is a possible value in article.status
+    case 'reviewed': // Example: handle variations
+      return { label: 'aprobado', color: 'text-green-600', bgColor: 'bg-green-50' };
+    case 'revisar': // Assuming 'revisar' is a possible value
+    case 'flagged': // Example: handle variations
+      return { label: 'revisar', color: 'text-red-600', bgColor: 'bg-red-50' };
+    case 'pendiente': // Assuming 'pendiente' is a possible value
+    case 'pending':
+      return { label: 'pendiente', color: 'text-gray-500', bgColor: 'bg-gray-50' };
+    default:
+      // Fallback for unknown or undefined statuses
+      return { label: 'desconocido', color: 'text-gray-400', bgColor: 'bg-gray-100' };
   }
 };
 
-const ArticleList: React.FC<{ articles: Article[] }> = ({ articles }) => {
+/**
+ * Props for the ArticleList component.
+ */
+interface ArticleListProps {
+  /** An array of Article objects to display. */
+  articles: Article[];
+}
+
+/**
+ * Renders a list of articles, each as a clickable card linking to the article's detail page.
+ * Displays basic information like title, date, section, author, and status.
+ */
+const ArticleList: React.FC<ArticleListProps> = ({ articles }) => {
   return (
+    // Use space-y for vertical spacing between articles
     <div className="space-y-4">
       {articles.map((article) => {
-        const status = getRandomStatus();
-        const statusConfig = getStatusConfig(status);
-        
+        // Determine the display status and styling based on the article's actual status field.
+        const statusConfig = getStatusConfig(article.status);
+        // Provide a fallback for potentially missing section.
+        const displaySeccion = article.seccion ?? 'Sin sección';
+
         return (
           <div
-            key={article.id}
+            key={article.id} // Use stable and unique ID for key
             className="group bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow relative"
           >
+            {/* Link wraps the entire content for better clickability */}
             <Link
-              to={`/article/${article.id}`}
-              className="block hover:no-underline"
+              to={`/article/${article.id}`} // Dynamic link based on article ID
+              className="block hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-lg" // Added focus styles
             >
-              <div className="flex justify-between items-start">
-                <div className="flex-grow pr-8">
-                  <h3 className="text-lg font-semibold mb-2 text-gray-900 group-hover:text-blue-600 px-2">
+              <div className="flex justify-between items-start gap-4"> {/* Added gap */}
+                {/* Left side: Title and metadata */}
+                <div className="flex-grow overflow-hidden"> {/* Prevent long text overflow */}
+                  {/* Article Title: Changes color on hover via group-hover */}
+                  <h3 className="text-lg font-semibold mb-2 text-gray-900 group-hover:text-blue-600 truncate"> {/* Added truncate */}
                     {article.titulo}
                   </h3>
-                  <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                    <span className="bg-gray-50 px-2 py-1 rounded">
-                      Fecha: <span className="font-semibold">{article.fecha}</span>
+                  {/* Metadata Badges */}
+                  <div className="flex flex-wrap gap-2 text-sm text-gray-600"> {/* Adjusted gap */}
+                    {/* Display Date */}
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
+                      Fecha: <span className="font-medium">{article.fecha}</span> {/* Use font-medium */}
                     </span>
-                    <span className="bg-gray-50 px-2 py-1 rounded">
-                      Sección: <span className="font-semibold">{article.seccion}</span>
+                    {/* Display Section (with fallback) */}
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
+                      Sección: <span className="font-medium">{displaySeccion}</span>
                     </span>
-                    <span className="bg-gray-50 px-2 py-1 rounded">
-                      Autor: <span className="font-semibold">{article.autor}</span>
+                    {/* Display Author */}
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
+                      Autor: <span className="font-medium">{article.autor}</span>
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className={`text-sm px-2 py-1 rounded min-w-[140px] ${statusConfig.bgColor} ${statusConfig.color}`}>
-                    Estado: <span className="font-semibold">{status}</span>
+
+                {/* Right side: Status and Open link */}
+                <div className="flex-shrink-0 flex items-center gap-4"> {/* Added flex-shrink-0 */}
+                  {/* Status Badge */}
+                  <span className={`text-sm px-2 py-1 rounded font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
+                    {/* Capitalize status label */}
+                    {statusConfig.label.charAt(0).toUpperCase() + statusConfig.label.slice(1)}
                   </span>
-                  <div className="text-gray-400 group-hover:text-blue-500 flex items-center gap-1">
-                    <span className="text-sm">Abrir</span>
-                    <FontAwesomeIcon icon={faChevronRight} className="text-xl" />
+                  {/* "Open" Link Indicator */}
+                  <div className="text-gray-400 group-hover:text-blue-500 flex items-center gap-1 transition-colors">
+                    <span className="text-sm hidden sm:inline">Abrir</span> {/* Hide text on small screens */}
+                    <FontAwesomeIcon icon={faChevronRight} className="h-4 w-4" /> {/* Controlled size */}
                   </div>
                 </div>
               </div>

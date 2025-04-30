@@ -1,387 +1,368 @@
 import React, { useMemo, useState, useEffect } from 'react';
-// --- Importar tipos desde ubicación central ---
-// import { Article, Metrics } from '../types'; // <-- DESCOMENTA y AJUSTA RUTA si usas tipos centrales
-// --- Si no usas tipos centrales, define aquí ---
-interface Article { // Asegúrate que esto coincida con tus datos reales y lo esperado por los componentes
-  fecha: string;
-  autor: string;
-  seccion: string; // Si no existe, hazla opcional (seccion?: string) o quítala
-  titulo?: string;
-  contenido?: string;
-  id?: string;
-  // Añade otros campos si son necesarios (hora, link_noticia, etc.)
-}
-interface Metrics {
-  totalArticles: number;
-  // otras métricas
-}
-// --- Fin Definición Tipos ---
 
+// --- Core Component Imports ---
 import ArticleList from '../components/ArticleList';
 import HomeMetrics from '../components/HomeMetrics';
-import { calculateMetrics } from '../components/articleAnalytics';
-import { loadArticles } from '../services/adapters/loadArticles';
-import { useDateRange } from '../hooks/useDateRange';
 import PeriodFilter from '../components/PeriodFilter';
-// --- Asegúrate de tener date-fns v2 o v3 ---
-import { startOfDay, endOfDay, isWithinInterval, format } from 'date-fns';
+
+// --- Data & Logic Imports ---
+import { loadArticles } from '../services/adapters/loadArticles';
 import { normaliseArticleDate } from '../services/adapters/normaliseArticleDate';
+import { calculateMetrics } from '../components/articleAnalytics';
+import { useDateRange } from '../hooks/useDateRange';
 
-/*****************************************************
- * Home Page (v2)
- * ... (comentarios igual) ...
- *****************************************************/
+// --- Type Imports ---
+// TODO: Ajusta la ruta si tu archivo de tipos está en otro lugar (ej: '../../types')
+// Asegúrate que estos tipos (especialmente Article) definan *exactamente* la estructura
+// de tus datos, incluyendo campos opcionales (ej: seccion?: string) si aplica.
+import { Article, Metrics } from '../types';
 
-// 🎚 Config
+// --- Utility Imports ---
+// Asegúrate de tener date-fns v2 o v3 instalada (`npm install date-fns@latest`)
+import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+
+/**
+ * Configuration for the Home page pagination.
+ */
 const ARTICLES_PER_PAGE = 10;
 
-// ▸ Tipos auxiliares
-type SortField = 'fecha' | 'autor' | 'seccion';
+/**
+ * Defines the possible fields for sorting articles.
+ */
+type SortField = 'fecha' | 'autor' | 'seccion'; // Verify 'seccion' exists in the imported Article type
+
+/**
+ * Defines the possible sort orders.
+ */
 type SortOrder = 'asc' | 'desc';
 
-// Función auxiliar para formatear fechas en logs (versión mejorada)
-const formatDate = (date: Date | null): string => {
-  if (!date) return 'null';
-  try {
-    if (date instanceof Date && !isNaN(date.getTime())) {
-      // Usamos un formato consistente y legible
-      return format(date, 'yyyy-MM-dd HH:mm:ss');
-    }
-    return `Invalid Date: ${String(date)}`;
-  } catch (error) {
-    console.error("Error formatting date:", date, error);
-    return `Error formatting Date: ${String(date)}`;
-  }
-};
-
-
+/**
+ * Home page component.
+ * Displays a list of articles filterable by date range, author, and section,
+ * with client-side sorting and pagination.
+ */
 const Home: React.FC = () => {
-  /********************
-   * 1. Datos fuente
-   *******************/
+
+  // --- 1. Data Fetching ---
+
+  // Load articles on initial mount and memoize the result.
+  // `loadArticles` should ideally return `Article[]` or be cast correctly.
   const articles = useMemo(() => loadArticles() as Article[], []);
 
-  // Log inicial (mejorado)
-  useEffect(() => {
-    console.log('===== DATOS CARGADOS =====');
-    console.log(`Total de artículos cargados: ${articles.length}`);
-    if (articles.length > 0) {
-        console.log('Ejemplo primer artículo:', articles[0]);
-        // Verificar campos clave
-        console.log(`  Tiene fecha: ${'fecha' in articles[0]}, Tiene autor: ${'autor' in articles[0]}, Tiene seccion: ${'seccion' in articles[0]}`);
-    }
+  // --- 2. State Management ---
 
-    const sampleArticles = articles.slice(0, 3);
-    console.log('Muestra de fechas (original -> normalizada):');
-    sampleArticles.forEach((article, index) => {
-        try {
-            const normalizedDate = normaliseArticleDate(article.fecha);
-            console.log(`[${index}] "${article.fecha}" -> ${formatDate(normalizedDate)}`);
-        } catch (error) {
-            const err = error as Error;
-            console.error(`[${index}] Error normalizando "${article.fecha}": ${err.message}`);
-        }
-    });
-    // ... (verificación fechas problemáticas opcional)
-  }, [articles]);
-
-  /********************
-   * 2. Filtro de fecha (con start/end of day)
-   *******************/
+  // Date range state from custom hook.
   const { range, setRange } = useDateRange();
 
-  // Log rango
-  useEffect(() => {
-    console.log('===== RANGO DE FECHAS ACTUALIZADO =====');
-    console.log(`Desde: ${formatDate(range.from)}`);
-    console.log(`Hasta: ${formatDate(range.to)}`);
-  }, [range]);
+  // State for secondary filters (author, section).
+  const [selectedAutor, setSelectedAutor] = useState<string>('');
+  const [selectedSeccion, setSelectedSeccion] = useState<string>('');
 
-  // useMemo articlesByDate (con start/end of day y manejo de errores)
-  const articlesByDate = useMemo(() => {
-    console.log('===== FILTRADO POR FECHAS =====');
-    if (!range.from || !range.to || isNaN(range.from.getTime()) || isNaN(range.to.getTime())) {
-      console.warn('Rango inválido/incompleto. Saltando filtro.');
-      return articles;
-    }
-
-    let start: Date, end: Date;
-    try {
-        start = startOfDay(range.from);
-        end = endOfDay(range.to);
-        console.log(`Aplicando filtro: ${formatDate(start)} - ${formatDate(end)}`);
-    } catch (dateError) {
-        console.error('❌ Error ajustando rango:', dateError);
-        return articles;
-    }
-
-    let filteredCount = 0;
-    const filtered = articles.filter((a) => {
-      let date: Date | null = null;
-      try {
-        date = normaliseArticleDate(a.fecha);
-        if (!date || isNaN(date.getTime())) return false; // Excluir fechas inválidas
-
-        // Asegúrate que isWithinInterval se importa y funciona
-        const isWithin = isWithinInterval(date, { start, end });
-        if (isWithin) filteredCount++;
-        return isWithin;
-      } catch (error) {
-        // Loguear error solo una vez por fecha problemática si es necesario
-        return false;
-      }
-    });
-
-    console.log(`Filtrado completado: ${filteredCount} artículos dentro del rango.`);
-    return filtered;
-  }, [articles, range]);
-
-  /********************
-   * 3. Filtros Autor / Sección + Ordenamiento
-   *******************/
-  const [selectedAutor, setSelectedAutor] = useState('');
-  const [selectedSeccion, setSelectedSeccion] = useState('');
+  // State for sorting configuration.
   const [sortField, setSortField] = useState<SortField>('fecha');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
 
-  // useMemo opciones select (con lógica de disponibilidad)
+  // State for pagination.
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // --- 3. Derived Data & Memoized Calculations ---
+
+  /**
+   * Filters articles based on the selected date range (`range`).
+   * Includes articles from the start of the 'from' date to the end of the 'to' date.
+   */
+  const articlesByDate = useMemo(() => {
+    // Ensure valid date range exists before filtering.
+    if (!range.from || !range.to || isNaN(range.from.getTime()) || isNaN(range.to.getTime())) {
+      return articles; // Return all articles if range is incomplete or invalid
+    }
+
+    try {
+      // Calculate interval boundaries to include the entire start and end days.
+      const start = startOfDay(range.from);
+      const end = endOfDay(range.to);
+
+      return articles.filter((article) => {
+        try {
+          const date = normaliseArticleDate(article.fecha);
+          // Exclude articles with unparseable or invalid dates.
+          if (!date || isNaN(date.getTime())) return false;
+          // Check if the article date falls within the calculated interval.
+          return isWithinInterval(date, { start, end });
+        } catch (filterError) {
+          // Log infrequent errors during development if needed, but exclude article on error.
+          // console.error(`Error filtering article by date: ${article.id || article.fecha}`, filterError);
+          return false;
+        }
+      });
+    } catch (dateAdjustmentError) {
+      // Handle potential errors from startOfDay/endOfDay if dates are extremely invalid.
+      // console.error("Error adjusting date range boundaries:", dateAdjustmentError);
+      return articles; // Fallback to all articles on critical range error
+    }
+  }, [articles, range]);
+
+  /**
+   * Generates lists of unique authors and sections based on currently date-filtered articles.
+   * Also calculates which authors/sections are available given the *other* active filter.
+   */
   const { autores, secciones, autoresDisponibles, seccionesDisponibles } = useMemo(() => {
-      const autoresSet = new Set(articlesByDate.map((a) => a.autor).filter(Boolean));
-      const seccionesSet = new Set(articlesByDate.map((a) => a.seccion).filter(Boolean)); // Usa a.seccion
+    // Use Sets for efficient unique value collection. Filter out empty values.
+    const autoresSet = new Set(articlesByDate.map((a) => a.autor).filter(Boolean));
+    const seccionesSet = new Set(articlesByDate.map((a) => a.seccion).filter(Boolean)); // Assumes a.seccion exists
 
-      const autoresDisponibles = new Set(
-          articlesByDate
-              .filter((a) => !selectedSeccion || a.seccion === selectedSeccion)
-              .map((a) => a.autor)
-              .filter(Boolean),
-      );
-      const seccionesDisponibles = new Set(
-          articlesByDate
-              .filter((a) => !selectedAutor || a.autor === selectedAutor)
-              .map((a) => a.seccion) // Usa a.seccion
-              .filter(Boolean),
-      );
+    // Determine available options considering cross-filtering.
+    const autoresDisponibles = new Set(
+      articlesByDate
+        .filter((a) => !selectedSeccion || a.seccion === selectedSeccion)
+        .map((a) => a.autor)
+        .filter(Boolean)
+    );
+    const seccionesDisponibles = new Set(
+      articlesByDate
+        .filter((a) => !selectedAutor || a.autor === selectedAutor)
+        .map((a) => a.seccion) // Assumes a.seccion exists
+        .filter(Boolean)
+    );
 
-      return {
-          autores: Array.from(autoresSet).sort((a, b) => a.localeCompare(b, 'es')),
-          secciones: Array.from(seccionesSet).sort((a, b) => a.localeCompare(b, 'es')),
-          autoresDisponibles,
-          seccionesDisponibles,
-      };
+    // Return sorted arrays and sets for availability checks.
+    return {
+      autores: Array.from(autoresSet).sort((a, b) => a.localeCompare(b, 'es')),
+      secciones: Array.from(seccionesSet).sort((a, b) => a.localeCompare(b, 'es')),
+      autoresDisponibles,
+      seccionesDisponibles,
+    };
   }, [articlesByDate, selectedAutor, selectedSeccion]);
 
-  // useEffect para ajustar página (importante)
-  useEffect(() => {
-      setCurrentPage(1); // Resetear a página 1 cuando cambian los filtros/orden
-  }, [selectedAutor, selectedSeccion, sortField, sortOrder, articlesByDate]); // Depende de articlesByDate también
-
-  // useMemo filteredAndSorted (con ordenamiento robusto)
+  /**
+   * Applies secondary filters (author, section) and sorts the date-filtered articles.
+   * Uses a cache for date normalization when sorting by date for performance.
+   */
   const filteredAndSorted = useMemo(() => {
-    console.log('===== ORDENAMIENTO Y FILTRADO FINAL =====');
-    let dateCache = new Map<string, Date | null>(); // Cache para optimizar orden por fecha
+    // Cache for normalized dates to avoid re-calculating during sort.
+    const dateCache = new Map<string, Date | null>();
 
+    // Apply author and section filters.
     const filtered = articlesByDate.filter(art =>
-         (!selectedAutor || art.autor === selectedAutor) &&
-         (!selectedSeccion || art.seccion === selectedSeccion) // Usa art.seccion
-     );
-     console.log(`Artículos tras filtro A/S: ${filtered.length}`);
+      (!selectedAutor || art.autor === selectedAutor) &&
+      (!selectedSeccion || art.seccion === selectedSeccion) // Assumes art.seccion exists
+    );
 
-     // Pre-cachear fechas si se ordena por fecha
-     if (sortField === 'fecha') {
-         filtered.forEach(art => {
-             if (!dateCache.has(art.fecha)) {
-                 try { dateCache.set(art.fecha, normaliseArticleDate(art.fecha)); }
-                 catch { dateCache.set(art.fecha, null); }
-             }
-         });
-     }
+    // Pre-normalize and cache dates only if sorting by date.
+    if (sortField === 'fecha') {
+      filtered.forEach(art => {
+        if (!dateCache.has(art.fecha)) {
+          try {
+            dateCache.set(art.fecha, normaliseArticleDate(art.fecha));
+          } catch {
+            dateCache.set(art.fecha, null); // Cache null on normalization error
+          }
+        }
+      });
+    }
 
-     const sorted = [...filtered].sort((a, b) => {
-         let cmp = 0;
-         if (sortField === 'fecha') {
-             const dateA = dateCache.get(a.fecha);
-             const dateB = dateCache.get(b.fecha);
-             if (dateA && !isNaN(dateA.getTime()) && dateB && !isNaN(dateB.getTime())) { cmp = dateB.getTime() - dateA.getTime(); }
-             else if (dateA && !isNaN(dateA.getTime())) { cmp = -1; } // A válida, B no
-             else if (dateB && !isNaN(dateB.getTime())) { cmp = 1; } // B válida, A no
-             else { cmp = (a.fecha || '').localeCompare(b.fecha || ''); } // Ambas inválidas/null
-         } else if (sortField === 'autor') {
-             cmp = (a.autor || '').localeCompare(b.autor || '', 'es', { sensitivity: 'base' });
-         } else if (sortField === 'seccion') { // Usa a.seccion
-             cmp = (a.seccion || '').localeCompare(b.seccion || '', 'es', { sensitivity: 'base' });
-         }
-         return sortOrder === 'asc' ? cmp : -cmp;
-     });
-     console.log(`Ordenamiento completado.`);
-     return sorted;
+    // Sort the filtered articles. Create a new array to avoid mutating the filtered list.
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'fecha':
+          const dateA = dateCache.get(a.fecha);
+          const dateB = dateCache.get(b.fecha);
+          // Robust date comparison: valid dates first, then compare times, fallback to string compare.
+          if (dateA && !isNaN(dateA.getTime()) && dateB && !isNaN(dateB.getTime())) {
+            comparison = dateB.getTime() - dateA.getTime(); // Default descending
+          } else if (dateA && !isNaN(dateA.getTime())) {
+            comparison = -1; // Place valid date A before invalid date B
+          } else if (dateB && !isNaN(dateB.getTime())) {
+            comparison = 1;  // Place valid date B before invalid date A
+          } else {
+            comparison = (a.fecha || '').localeCompare(b.fecha || ''); // Fallback for two invalid dates
+          }
+          break;
+        case 'autor':
+          comparison = (a.autor || '').localeCompare(b.autor || '', 'es', { sensitivity: 'base' });
+          break;
+        case 'seccion': // Assumes a.seccion and b.seccion exist on the Article type
+          comparison = (a.seccion || '').localeCompare(b.seccion || '', 'es', { sensitivity: 'base' });
+          break;
+      }
+      // Apply sort order (asc/desc).
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
+    return sorted;
   }, [articlesByDate, selectedAutor, selectedSeccion, sortField, sortOrder]);
 
-  /********************
-   * 4. Paginación
-   *******************/
+  /**
+   * Calculates the total number of pages based on the filtered and sorted articles.
+   */
   const totalPages = Math.max(1, Math.ceil(filteredAndSorted.length / ARTICLES_PER_PAGE));
+
+  /**
+   * Extracts the articles to display on the current page.
+   */
   const currentArticles = useMemo(() => {
-    const pageIndex = Math.max(0, currentPage - 1); // currentPage es base 1
+    const pageIndex = Math.max(0, currentPage - 1); // currentPage is 1-based
     const start = pageIndex * ARTICLES_PER_PAGE;
     const end = start + ARTICLES_PER_PAGE;
-    const paginated = filteredAndSorted.slice(start, end);
-    console.log(`===== PAGINACIÓN (Página ${currentPage}/${totalPages}) =====`);
-    console.log(`Mostrando ${start + 1}-${start + paginated.length} de ${filteredAndSorted.length}`);
-    return paginated;
+    return filteredAndSorted.slice(start, end);
   }, [filteredAndSorted, currentPage, totalPages]);
 
-  /********************
-   * 5. Métricas
-   *******************/
-   const metrics: Metrics = useMemo(() => {
-       console.log("Calculando métricas...");
-       const calculated = calculateMetrics(filteredAndSorted);
-       console.log("Métricas:", calculated);
-       return calculated;
-   }, [filteredAndSorted]);
+  /**
+   * Calculates display metrics based on the final filtered and sorted list.
+   */
+  const metrics: Metrics = useMemo(() => {
+    // `calculateMetrics` should return an object compatible with the `Metrics` type.
+    return calculateMetrics(filteredAndSorted);
+  }, [filteredAndSorted]);
 
 
-  /********************
-   * 6. Render (Estilos Originales Restaurados)
-   *******************/
-  console.log("Rendering Home...");
+  // --- 4. Effects ---
+
+  /**
+   * Effect to reset the current page to 1 whenever filters or sorting change,
+   * preventing viewing a non-existent page after data reduction.
+   */
+  useEffect(() => {
+    if (currentPage !== 1) {
+        setCurrentPage(1);
+    }
+    // We only reset *if* not already on page 1 to avoid potential minor re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAutor, selectedSeccion, sortField, sortOrder, articlesByDate]); // Reset when underlying data changes too
+
+
+  // --- 5. Render Logic ---
+
   return (
-    // --- Estructura y clases externas originales ---
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Encabezado Original */}
+        {/* Page Header */}
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">The trust editor</h1>
           <p className="text-lg text-gray-600">Una herramienta con IA para ayudar a las redacciones a mejorar las noticias</p>
         </header>
 
-        {/* Métricas (Pasando props corregidas) */}
+        {/* Display Metrics */}
+        {/* Ensure HomeMetrics props match: expects `articles` and `metrics` */}
         <HomeMetrics articles={filteredAndSorted} metrics={metrics} />
 
-        {/* --- Sección Filtros/Lista con Estructura y Clases Originales --- */}
-        <section className="mt-8 md:mt-12"> {/* Sin bg-white, shadow, etc. */}
-          {/* --- Div Flex Principal Original --- */}
+        {/* Filters and Article List Section */}
+        <section className="mt-8 md:mt-12">
+          {/* Filter Controls Row */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-            {/* Título Notas y Filtro Fecha */}
-            <h2 className="text-xl font-semibold">Notas ({filteredAndSorted.length})</h2> {/* Añadido contador */}
+            <h2 className="text-xl font-semibold">Notas ({filteredAndSorted.length})</h2>
             <PeriodFilter value={range} onChange={setRange} />
 
-            {/* --- Div Alineado a la Derecha Original --- */}
+            {/* Right-aligned filter/sort controls */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 md:ml-auto">
-              {/* Autor Select (Clases originales, lógica de filtro mantenida) */}
+              {/* Author Filter */}
               <select
                 value={selectedAutor}
-                onChange={(e) => setSelectedAutor(e.target.value)} // Reset de página manejado por useEffect
-                className="w-48 px-3 py-2 border rounded-md text-sm" // Clases originales
+                onChange={(e) => setSelectedAutor(e.target.value)}
+                className="w-48 px-3 py-2 border rounded-md text-sm"
                 aria-label="Filtrar por autor"
               >
                 <option value="">Todos los autores</option>
-                {/* Mapear sobre 'autores', deshabilitar si no está en 'autoresDisponibles' */}
-                {autores.map((a) => (
-                    <option key={a} value={a} disabled={!autoresDisponibles.has(a)}>
-                        {a} {!autoresDisponibles.has(a) ? '' : ''} {/* Texto disabled opcional */}
-                    </option>
-                  ))}
+                {autores.map((author) => (
+                  <option key={author} value={author} disabled={!autoresDisponibles.has(author)}>
+                    {author}
+                  </option>
+                ))}
               </select>
 
-              {/* Sección Select (Clases originales, lógica de filtro mantenida) */}
+              {/* Section Filter */}
               <select
                 value={selectedSeccion}
-                onChange={(e) => setSelectedSeccion(e.target.value)} // Reset de página manejado por useEffect
-                className="w-48 px-3 py-2 border rounded-md text-sm" // Clases originales
+                onChange={(e) => setSelectedSeccion(e.target.value)}
+                className="w-48 px-3 py-2 border rounded-md text-sm"
                 aria-label="Filtrar por sección"
               >
                 <option value="">Todas las secciones</option>
-                 {/* Mapear sobre 'secciones', deshabilitar si no está en 'seccionesDisponibles' */}
-                {secciones.map((s) => (
-                    <option key={s} value={s} disabled={!seccionesDisponibles.has(s)}>
-                         {s} {!seccionesDisponibles.has(s) ? '' : ''} {/* Texto disabled opcional */}
-                    </option>
-                  ))}
+                {secciones.map((section) => (
+                  <option key={section} value={section} disabled={!seccionesDisponibles.has(section)}>
+                    {section}
+                  </option>
+                ))}
               </select>
 
-              {/* Ordenar (Clases originales) */}
+              {/* Sort Controls */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Ordenar por:</span>
-                {(['fecha','autor','seccion'] as SortField[]).map((id) => (
+                {(['fecha', 'autor', 'seccion'] as SortField[]).map((field) => (
                   <button
-                    key={id}
+                    key={field}
                     onClick={() => {
-                       // Lógica de cambio de orden (asc/desc al repetir click)
-                       const newOrder = id === sortField ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'desc'; // Default desc
-                       setSortField(id);
-                       setSortOrder(newOrder);
+                      const newOrder = field === sortField ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'desc';
+                      setSortField(field);
+                      setSortOrder(newOrder);
                     }}
-                    // --- Clases originales para botones de orden ---
                     className={`px-3 py-1 text-sm border rounded-md hover:bg-gray-50 flex items-center gap-1 ${
-                        sortField === id ? 'bg-blue-50 border-blue-200' : '' // Estilo activo original
+                      sortField === field ? 'bg-blue-50 border-blue-200' : '' // Active style
                     }`}
-                    aria-label={`Ordenar por ${id}`}
+                    aria-label={`Ordenar por ${field}`}
                   >
-                    {id.charAt(0).toUpperCase() + id.slice(1)}
-                    {/* Flecha de orden */}
-                    {sortField === id && (
-                        <span aria-hidden="true">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    {/* Capitalize field name */}
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                    {/* Display sort direction indicator */}
+                    {sortField === field && (
+                      <span aria-hidden="true">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </button>
                 ))}
-              </div> {/* Fin div ordenar */}
-            </div> {/* Fin div alineado derecha */}
-          </div> {/* Fin div flex principal */}
+              </div>
+            </div>
+          </div>
 
-          {/* Listado (Sin cambios estructurales) */}
+          {/* Article List Display */}
           <div className="mt-6">
+            {/* Ensure ArticleList expects `articles: Article[]` */}
             <ArticleList articles={currentArticles} />
-            {/* Mensaje si no hay resultados */}
-            {currentArticles.length === 0 && filteredAndSorted.length === 0 && articles.length > 0 && (
-                <p className="text-center text-gray-500 py-8">No se encontraron artículos con los filtros seleccionados.</p>
+            {/* Display message when no articles match filters */}
+            {currentArticles.length === 0 && articles.length > 0 && (
+              <p className="text-center text-gray-500 py-8">No se encontraron artículos con los filtros seleccionados.</p>
             )}
-             {articles.length === 0 && (
-                <p className="text-center text-gray-500 py-8">No hay artículos cargados.</p>
+            {/* Display message when no articles are loaded at all */}
+            {articles.length === 0 && (
+               <p className="text-center text-gray-500 py-8">No hay artículos cargados.</p>
             )}
           </div>
 
-          {/* Paginación (Clases y Lógica Original Simple) */}
+          {/* Pagination Controls */}
           {totalPages > 1 && (
-            // --- Nav con clases originales ---
-            <nav className="mt-6 flex justify-center gap-2">
-              {/* Botón Anterior (Clases originales) */}
+            <nav className="mt-6 flex justify-center gap-2" aria-label="Paginación">
               <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border rounded-md disabled:opacity-50" // Clases originales
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border rounded-md disabled:opacity-50"
               >
-                  Anterior
+                Anterior
               </button>
-              {/* --- Lógica simple original para números de página --- */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              {/* Simple page number buttons */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
                 <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                   // --- Clases originales para botones de página ---
+                  key={pageNumber}
+                  onClick={() => setCurrentPage(pageNumber)}
                   className={`px-4 py-2 border rounded-md ${
-                    currentPage === p ? 'bg-blue-500 text-white' : 'hover:bg-gray-50' // Estilo activo y hover originales
+                    currentPage === pageNumber ? 'bg-blue-500 text-white' : 'hover:bg-gray-50' // Active style
                   }`}
-                  aria-current={currentPage === p ? 'page' : undefined}
-                 >
-                    {p}
-                 </button>
+                  aria-current={currentPage === pageNumber ? 'page' : undefined}
+                >
+                  {pageNumber}
+                </button>
               ))}
-              {/* Botón Siguiente (Clases originales) */}
               <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border rounded-md disabled:opacity-50" // Clases originales
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border rounded-md disabled:opacity-50"
               >
-                  Siguiente
+                Siguiente
               </button>
             </nav>
-          )} {/* Fin Paginación */}
-        </section> {/* Fin Sección Filtros/Lista */}
-      </div> {/* Fin Contenedor Principal */}
-    </div> /* Fin Div Externo */
+          )}
+        </section>
+      </div>
+    </div>
   );
 };
 
