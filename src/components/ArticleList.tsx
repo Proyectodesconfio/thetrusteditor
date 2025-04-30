@@ -1,111 +1,119 @@
+// src/components/ArticleList.tsx
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {
+  faChevronRight,
+  faSmile, faMeh, faFrown, faQuestionCircle
+} from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
-// Ensure Article is imported correctly according to your types/index.ts structure
-import type { Article } from '../types';
+import type { Article, ArticleSentiment } from '../types'; // Asegúrate que ArticleSentiment se importe
+
+// --- Tipos de Estado y Sentimiento para Mostrar ---
+// Definir las etiquetas *finales* que queremos mostrar en la UI
+type DisplayStatusLabel = 'Pendiente' | 'Aprobado' | 'Revisar' | 'Sin Revisión';
+type SentimentLabel = 'Positivo' | 'Neutro' | 'Negativo' | 'N/A';
+
+// --- Configuración de ESTADO ---
 
 /**
- * Defines the possible display statuses for an article and their associated styling.
- * Adjust these based on the actual values used in `Article.status`.
- */
-type DisplayStatus = 'pendiente' | 'aprobado' | 'revisar' | 'desconocido';
-
-/**
- * Maps an article's status string to a display status and Tailwind CSS classes.
- * Handles potential undefined status from the Article data.
+ * Mapea el valor de `article.status` a una etiqueta de UI y clases de estilo.
  *
- * @param status - The status string from the Article object (e.g., "reviewed", "pending", or undefined).
- * @returns An object containing the display status label and corresponding CSS classes.
+ * @param status - El valor del campo `status` del artículo (puede ser undefined).
+ * @returns Objeto con la etiqueta a mostrar y las clases de color/fondo.
  */
-const getStatusConfig = (status: string | undefined): { label: DisplayStatus; color: string; bgColor: string } => {
-  // Normalize the input status (lowercase, handle undefined)
-  const normalizedStatus = status?.toLowerCase() ?? 'desconocido';
+const getStatusConfig = (status: string | undefined): { label: DisplayStatusLabel; color: string; bgColor: string } => {
+  // Normalizar: quitar espacios, convertir a minúsculas, manejar undefined/null/""
+  const normalizedStatus = status?.trim().toLowerCase() ?? 'sin revisión';
 
+  // *** AJUSTA LOS 'case' PARA QUE COINCIDAN CON TUS DATOS EXACTOS ***
   switch (normalizedStatus) {
-    // Map potential backend statuses to display statuses
-    case 'aprobado': // Assuming 'aprobado' is a possible value in article.status
-    case 'reviewed': // Example: handle variations
-      return { label: 'aprobado', color: 'text-green-600', bgColor: 'bg-green-50' };
-    case 'revisar': // Assuming 'revisar' is a possible value
-    case 'flagged': // Example: handle variations
-      return { label: 'revisar', color: 'text-red-600', bgColor: 'bg-red-50' };
-    case 'pendiente': // Assuming 'pendiente' is a possible value
+    case 'reviewed':
+    case 'aprobado': // Si también usas 'aprobado'
+      return { label: 'Aprobado', color: 'text-green-600', bgColor: 'bg-green-50' };
+
     case 'pending':
-      return { label: 'pendiente', color: 'text-gray-500', bgColor: 'bg-gray-50' };
-    default:
-      // Fallback for unknown or undefined statuses
-      return { label: 'desconocido', color: 'text-gray-400', bgColor: 'bg-gray-100' };
+    case 'pendiente': // Si también usas 'pendiente'
+      return { label: 'Pendiente', color: 'text-amber-600', bgColor: 'bg-amber-50' }; // Ajustado color para pendiente
+
+    case 'flagged':
+    case 'revisar': // Si usas 'revisar'
+      return { label: 'Revisar', color: 'text-red-600', bgColor: 'bg-red-50' };
+
+    case '':             // String vacío
+    case 'unreviewed':   // Si usas 'unreviewed'
+    case 'sin revisión': // Si usas 'sin revisión'
+    default:             // Cualquier otro valor o undefined/null
+      return { label: 'Sin Revisión', color: 'text-gray-500', bgColor: 'bg-gray-100' }; // Cambiado label a 'Sin Revisión'
   }
 };
 
-/**
- * Props for the ArticleList component.
- */
+// --- Configuración de SENTIMIENTO ---
+
+type SentimentDisplayConfig = { label: SentimentLabel; color: string; icon: typeof faSmile; };
+
+/** Maps sentiment label ('POS', 'NEU', 'NEG') to display configuration. */
+const getSentimentConfig = (globalSentiment: ArticleSentiment['global_sentiment'] | undefined): SentimentDisplayConfig => {
+  const label = globalSentiment?.[0] ?? null;
+  switch (label) {
+    case 'POS': return { label: 'Positivo', color: 'text-green-600', icon: faSmile };
+    case 'NEU': return { label: 'Neutro',   color: 'text-gray-500',  icon: faMeh };
+    case 'NEG': return { label: 'Negativo', color: 'text-red-600',   icon: faFrown };
+    default:    return { label: 'N/A',      color: 'text-gray-400',  icon: faQuestionCircle };
+  }
+};
+
+// --- Componente ArticleList ---
+
 interface ArticleListProps {
-  /** An array of Article objects to display. */
   articles: Article[];
 }
 
-/**
- * Renders a list of articles, each as a clickable card linking to the article's detail page.
- * Displays basic information like title, date, section, author, and status.
- */
+/** Renders a list of articles, including status and sentiment indicators. */
 const ArticleList: React.FC<ArticleListProps> = ({ articles }) => {
   return (
-    // Use space-y for vertical spacing between articles
     <div className="space-y-4">
       {articles.map((article) => {
-        // Determine the display status and styling based on the article's actual status field.
-        const statusConfig = getStatusConfig(article.status);
-        // Provide a fallback for potentially missing section.
+        // Obtener configuraciones usando los helpers actualizados
+        const statusConfig = getStatusConfig(article.status); // <- USA LA FUNCIÓN CORREGIDA
+        const sentimentConfig = getSentimentConfig(article.sentiment?.global_sentiment);
         const displaySeccion = article.seccion ?? 'Sin sección';
+        const sentimentTooltip = article.sentiment?.global_sentiment
+          ? `${sentimentConfig.label} (Confianza: ${article.sentiment.global_sentiment[1].toFixed(1)}%)` // Usar toFixed(1) para un decimal
+          : `Sentimiento no disponible`;
 
         return (
-          <div
-            key={article.id} // Use stable and unique ID for key
-            className="group bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow relative"
-          >
-            {/* Link wraps the entire content for better clickability */}
-            <Link
-              to={`/article/${article.id}`} // Dynamic link based on article ID
-              className="block hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-lg" // Added focus styles
-            >
-              <div className="flex justify-between items-start gap-4"> {/* Added gap */}
-                {/* Left side: Title and metadata */}
-                <div className="flex-grow overflow-hidden"> {/* Prevent long text overflow */}
-                  {/* Article Title: Changes color on hover via group-hover */}
-                  <h3 className="text-lg font-semibold mb-2 text-gray-900 group-hover:text-blue-600 truncate"> {/* Added truncate */}
-                    {article.titulo}
-                  </h3>
-                  {/* Metadata Badges */}
-                  <div className="flex flex-wrap gap-2 text-sm text-gray-600"> {/* Adjusted gap */}
-                    {/* Display Date */}
-                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
-                      Fecha: <span className="font-medium">{article.fecha}</span> {/* Use font-medium */}
-                    </span>
-                    {/* Display Section (with fallback) */}
-                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
-                      Sección: <span className="font-medium">{displaySeccion}</span>
-                    </span>
-                    {/* Display Author */}
-                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">
-                      Autor: <span className="font-medium">{article.autor}</span>
-                    </span>
+          <div key={article.id} className="group bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow relative">
+            <Link to={`/article/${article.id}`} className="block hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-lg">
+              <div className="flex justify-between items-start gap-4">
+                {/* Left side */}
+                <div className="flex-grow overflow-hidden">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-900 group-hover:text-blue-600 truncate">{article.titulo}</h3>
+                  <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">Fecha: <span className="font-medium">{article.fecha}</span></span>
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">Sección: <span className="font-medium">{displaySeccion}</span></span>
+                    <span className="bg-gray-50 px-2 py-1 rounded whitespace-nowrap">Autor: <span className="font-medium">{article.autor}</span></span>
                   </div>
                 </div>
 
-                {/* Right side: Status and Open link */}
-                <div className="flex-shrink-0 flex items-center gap-4"> {/* Added flex-shrink-0 */}
-                  {/* Status Badge */}
-                  <span className={`text-sm px-2 py-1 rounded font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-                    {/* Capitalize status label */}
-                    {statusConfig.label.charAt(0).toUpperCase() + statusConfig.label.slice(1)}
+                {/* Right side */}
+                <div className="flex-shrink-0 flex items-center gap-3">
+                  {/* Sentiment Indicator */}
+                  <span
+                    className={`flex items-center gap-1 text-sm px-2 py-1 rounded font-medium ${sentimentConfig.color} bg-opacity-10 ${sentimentConfig.color.replace('text-', 'bg-')}`}
+                    title={sentimentTooltip}
+                  >
+                     <FontAwesomeIcon icon={sentimentConfig.icon} className="h-3.5 w-3.5" />
                   </span>
-                  {/* "Open" Link Indicator */}
+
+                  {/* Status Badge - Usa el label de statusConfig */}
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
+                    {statusConfig.label} {/* Muestra la etiqueta correcta: Aprobado, Pendiente, Revisar, Sin Revisión */}
+                  </span>
+
+                  {/* Open Link */}
                   <div className="text-gray-400 group-hover:text-blue-500 flex items-center gap-1 transition-colors">
-                    <span className="text-sm hidden sm:inline">Abrir</span> {/* Hide text on small screens */}
-                    <FontAwesomeIcon icon={faChevronRight} className="h-4 w-4" /> {/* Controlled size */}
+                    <span className="text-sm hidden sm:inline">Abrir</span>
+                    <FontAwesomeIcon icon={faChevronRight} className="h-4 w-4" />
                   </div>
                 </div>
               </div>
