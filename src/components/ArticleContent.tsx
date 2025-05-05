@@ -9,7 +9,6 @@ interface HighlightRange {
     type: FilterType;
     className: string;
     data?: any;
-    // Añadir un ID único para el key de React
     id: string;
 }
 
@@ -25,21 +24,26 @@ interface ArticleContentProps {
     sources?: SourceCitation[] | null;
 }
 
-// --- Colores y Estilos ---
-const highlightStyles: Record<FilterType, string> = {
-    'Entidades': 'bg-cyan-100 text-cyan-800 px-0.5 rounded mx-px',
-    'Adjetivos': 'bg-purple-100 text-purple-800 px-0.5 rounded mx-px',
-    'Sentimientos': 'block my-1.5 px-2 py-1 border-l-4 rounded-r-md italic', // Base style for block
-    'Fuentes': 'block my-1 border border-dashed px-1 rounded mx-px bg-amber-50 text-amber-800 border-amber-300', // Base style for block
+// --- Colores y Estilos de Resaltado ---
+// Estilos base INLINE para Entidades y Adjetivos
+const entityAdjStyles: Record<'Entidades' | 'Adjetivos', string> = {
+    'Entidades': 'bg-cyan-100 text-cyan-800 px-1 py-0.5 rounded mx-px', // Inline
+    'Adjetivos': 'bg-purple-100 text-purple-800 px-1 py-0.5 rounded mx-px', // Inline
 };
 
-const sentimentColors: Record<'POS' | 'NEU' | 'NEG', { bg: string; text: string; border: string }> = {
-    'POS': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-300' },
-    'NEU': { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
-    'NEG': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-300' },
+// Estilos para Sentimientos (inline, sutil)
+const sentimentStyles: Record<'POS' | 'NEU' | 'NEG', string> = {
+    'POS': 'bg-green-50 text-green-800 px-1 py-0.5 rounded mx-px', // Fondo muy claro, texto oscuro
+    'NEU': 'bg-gray-100 text-gray-800 px-1 py-0.5 rounded mx-px', // Fondo muy claro, texto oscuro
+    'NEG': 'bg-red-50 text-red-800 px-1 py-0.5 rounded mx-px',   // Fondo muy claro, texto oscuro
 };
+// Nota: Puedes experimentar con 'underline decoration-wavy decoration-red-500' etc. si prefieres subrayados
 
-// --- Función de Resaltado ---
+// Estilos para Fuentes (manteniendo bloque para citas, pero mejorado)
+const sourceStyle = 'block my-2 p-2 border-l-4 border-amber-300 bg-amber-50 text-amber-900 text-sm rounded-r-md shadow-sm';
+
+
+// --- Función de Resaltado (Lógica simplificada para claridad) ---
 const renderHighlightedContent = (
     content: string,
     activeFilters: string[],
@@ -51,28 +55,27 @@ const renderHighlightedContent = (
 
     const highlights: HighlightRange[] = [];
     const activeFilterSet = new Set(activeFilters);
-    let highlightCounter = 0; // Para generar IDs únicos
 
     // 1. Recopilar todos los highlights posibles
     if (activeFilterSet.has('Entidades') && entitiesData?.entities_list) {
         entitiesData.entities_list.forEach((entity, idx) => highlights.push({
             start: entity.start_char, end: entity.end_char, type: 'Entidades', id: `ent-${idx}`,
-            className: highlightStyles['Entidades'], data: entity.type
+            className: entityAdjStyles['Entidades'], data: entity.type
         }));
     }
     if (activeFilterSet.has('Adjetivos') && adjectivesData?.adjectives_list) {
         adjectivesData.adjectives_list.forEach((adj, idx) => highlights.push({
             start: adj.start_char, end: adj.end_char, type: 'Adjetivos', id: `adj-${idx}`,
-            className: highlightStyles['Adjetivos']
+            className: entityAdjStyles['Adjetivos']
         }));
     }
     if (activeFilterSet.has('Sentimientos') && sentimentData?.highest_scoring_sentence_per_label) {
+        // --- APLICAR ESTILOS INLINE PARA SENTIMIENTOS ---
         const processSentence = (sentenceInfo: HighestScoringSentence | undefined, type: 'POS' | 'NEU' | 'NEG') => {
-            if (!sentenceInfo) return;
-            const colors = sentimentColors[type];
+            if (!sentenceInfo || sentenceInfo.start_char >= sentenceInfo.end_char) return;
             highlights.push({
                 start: sentenceInfo.start_char, end: sentenceInfo.end_char, type: 'Sentimientos', id: `sen-${type}`,
-                className: `${highlightStyles['Sentimientos']} ${colors.bg} ${colors.text} ${colors.border}`,
+                className: sentimentStyles[type], // Usa los estilos inline definidos arriba
                 data: type
             });
         };
@@ -81,131 +84,109 @@ const renderHighlightedContent = (
         processSentence(sentimentData.highest_scoring_sentence_per_label.NEG, 'NEG');
     }
     if (activeFilterSet.has('Fuentes') && sourcesData) {
-        sourcesData.forEach((source, idx) => highlights.push({
-            start: source.start_char, end: source.end_char, type: 'Fuentes', id: `src-${idx}`,
-            className: highlightStyles['Fuentes'],
-            data: source.components?.referenciado?.text
-        }));
+        sourcesData.forEach((source, idx) => {
+             // Asegurar que las fuentes también tengan rangos válidos
+            if (source.start_char < source.end_char) {
+                highlights.push({
+                    start: source.start_char, end: source.end_char, type: 'Fuentes', id: `src-${idx}`,
+                    className: sourceStyle, // Estilo de bloque para citas
+                    data: source.components?.referenciado?.text ?? 'Fuente citada'
+                });
+            }
+        });
     }
 
-    // Si no hay filtros activos o no se encontraron highlights
+    // Si no hay highlights que aplicar, devolver párrafos simples
     if (highlights.length === 0) {
+        // Divide por saltos de línea y filtra párrafos vacíos
         return content.split('\n').filter(p => p.trim() !== '').map((p, index) => <p key={`p-${index}`}>{p}</p>);
     }
 
-    // 2. Crear "eventos" de inicio y fin para cada highlight
-    type PointEvent = { index: number; type: 'START' | 'END'; highlight: HighlightRange };
-    const points: PointEvent[] = [];
-    highlights.forEach(h => {
-        // Ignorar highlights inválidos o de longitud cero
-        if (h.start >= h.end) return;
-        points.push({ index: h.start, type: 'START', highlight: h });
-        points.push({ index: h.end, type: 'END', highlight: h });
+    // Ordenar highlights por inicio, luego por fin (más largos primero si empiezan igual)
+    highlights.sort((a, b) => {
+        if (a.start !== b.start) return a.start - b.start;
+        return b.end - a.end; // Más largos primero para anidamiento visual correcto
     });
 
-    // Ordenar eventos por índice, los END van antes que los START en el mismo índice
-    points.sort((a, b) => {
-        if (a.index !== b.index) return a.index - b.index;
-        return a.type === 'END' ? -1 : 1; // ENDs first
-    });
+    // --- Lógica de Renderizado Anidado ---
+    // Esta función recursiva maneja el anidamiento de <mark>s
+    const buildNestedJsx = (text: string, rangeStart: number, rangeEnd: number, availableHighlights: HighlightRange[]): (string | JSX.Element)[] => {
+        const output: (string | JSX.Element)[] = [];
+        let cursor = rangeStart;
 
-    // 3. Construir el resultado iterando por los puntos
-    const result: (JSX.Element | string)[] = [];
-    let lastIndex = 0;
-    const activeHighlightStack: HighlightRange[] = []; // Pila para manejar anidamiento
+        // Encuentra highlights que *inician* dentro del rango actual [rangeStart, rangeEnd)
+        const applicableHighlights = availableHighlights.filter(h => h.start >= rangeStart && h.start < rangeEnd);
 
-    points.forEach(point => {
-        // Añadir texto normal antes del punto actual
-        if (point.index > lastIndex) {
-            result.push(content.substring(lastIndex, point.index));
-        }
-
-        if (point.type === 'START') {
-            activeHighlightStack.push(point.highlight); // Añadir a la pila
-        } else { // END event
-            // Quitar de la pila (buscar por ID por si acaso)
-            const stackIndex = activeHighlightStack.findIndex(h => h.id === point.highlight.id);
-            if (stackIndex > -1) {
-                activeHighlightStack.splice(stackIndex, 1);
+        applicableHighlights.forEach((highlight, i) => {
+            // Añadir texto normal antes del highlight actual
+            if (highlight.start > cursor) {
+                output.push(text.substring(cursor, highlight.start));
             }
-        }
 
-        // Actualizar el índice
-        lastIndex = point.index;
+            // Determinar el fin real de este highlight (no puede exceder rangeEnd)
+            const actualEnd = Math.min(highlight.end, rangeEnd);
 
-        // Determinar las clases combinadas del highlight activo (el último en la pila)
-        // Esto es una simplificación: solo toma el estilo del más interno/último añadido.
-        // Una combinación real de clases requeriría lógica CSS más compleja.
-        const currentHighlight = activeHighlightStack.length > 0 ? activeHighlightStack[activeHighlightStack.length - 1] : null;
+            // Filtrar los highlights que pueden estar *dentro* del actual
+            const innerHighlights = availableHighlights.filter(h => h.id !== highlight.id && h.start >= highlight.start && h.end <= actualEnd);
 
-        // Si hay un highlight activo para el *siguiente* segmento (hasta el próximo punto)
-        // Esto es parte de la lógica que necesitaría una librería de rangos,
-        // por ahora, el enfoque anterior de reconstruir párrafos es más simple,
-        // aunque menos preciso con anidamientos visuales profundos.
-
-        // --- VAMOS A VOLVER AL ENFOQUE MÁS SIMPLE DE ANIDACIÓN DE MARKS ---
-        // La lógica de puntos es más precisa pero compleja de implementar correctamente aquí.
-        // El enfoque anterior con ordenamiento y renderizado iterativo anidará
-        // las etiquetas <mark> y dependerá del CSS para la visualización.
-    });
-
-    // --- Reconstrucción de Párrafos (Misma lógica simplificada que antes) ---
-    // Re-usando la lógica anterior que anida <mark>s
-    highlights.sort((a, b) => a.start - b.start); // Asegurar orden inicial
-    const nestedResult: (JSX.Element | string)[] = [];
-    let currentIndex = 0;
-
-    highlights.forEach((highlight, i) => {
-        // Permitir solapamientos parciales, pero evitar duplicados exactos
-         if (highlight.start < currentIndex && highlight.end <= currentIndex) {
-            return; // Totalmente contenido y ya procesado
-         }
-         // Corregir inicio si se solapa
-         const actualStart = Math.max(highlight.start, currentIndex);
-
-        // Añadir texto normal antes
-        if (actualStart > currentIndex) {
-            nestedResult.push(content.substring(currentIndex, actualStart));
-        }
-        // Añadir el resaltado (asegurándose de no ir más allá del contenido)
-         const actualEnd = Math.min(highlight.end, content.length);
-         if (actualEnd > actualStart) { // Solo renderizar si hay longitud
-            nestedResult.push(
+            // Renderizar el highlight actual, procesando su contenido recursivamente
+            output.push(
                 <mark key={highlight.id} className={highlight.className} title={typeof highlight.data === 'string' ? highlight.data : highlight.type}>
-                    {content.substring(actualStart, actualEnd)}
+                    {buildNestedJsx(text, highlight.start, actualEnd, innerHighlights)}
                 </mark>
             );
+
+            // Mover cursor al final de este highlight
+            cursor = actualEnd;
+        });
+
+        // Añadir texto restante después del último highlight dentro de este rango
+        if (cursor < rangeEnd) {
+            output.push(text.substring(cursor, rangeEnd));
         }
-        // Actualizar índice al final de este highlight (permite anidamiento)
-        currentIndex = actualEnd;
-    });
 
-    // Añadir texto restante
-    if (currentIndex < content.length) {
-        nestedResult.push(content.substring(currentIndex));
-    }
+        return output;
+    };
 
+    // Procesar todo el contenido inicial
+    const processedJsx = buildNestedJsx(content, 0, content.length, highlights);
 
-    // Dividir el resultado final en párrafos
+    // --- Dividir en Párrafos ---
+    // Similar a antes, pero manejando arrays anidados de JSX/string
     const finalOutput: JSX.Element[] = [];
-    let currentParagraph: (JSX.Element | string)[] = [];
-    nestedResult.forEach((segment) => {
-        if (typeof segment === 'string') {
+    let currentParagraphContent: (string | JSX.Element)[] = [];
+
+    const processSegment = (segment: string | JSX.Element | (string | JSX.Element)[]) => {
+        if (Array.isArray(segment)) {
+            segment.forEach(processSegment); // Procesar elementos del array recursivamente
+        } else if (typeof segment === 'string') {
             const parts = segment.split('\n');
             parts.forEach((part, partIndex) => {
-                if (part.length > 0) currentParagraph.push(part);
-                if (partIndex < parts.length - 1) { // Hubo un \n
-                    if (currentParagraph.length > 0) finalOutput.push(<p key={`p-${finalOutput.length}`}>{currentParagraph.map((s, si) => <React.Fragment key={si}>{s}</React.Fragment>)}</p>);
-                    currentParagraph = [];
+                if (part.length > 0) {
+                    currentParagraphContent.push(part);
+                }
+                // Si encontramos un salto de línea original y no es el último trozo
+                if (partIndex < parts.length - 1) {
+                    if (currentParagraphContent.length > 0) {
+                        finalOutput.push(<p key={`p-${finalOutput.length}`}>{currentParagraphContent}</p>);
+                    }
+                    currentParagraphContent = []; // Empezar nuevo párrafo
                 }
             });
-        } else { // Es un <mark>
-            currentParagraph.push(segment);
+        } else { // Es un elemento JSX (<mark>)
+            currentParagraphContent.push(segment);
         }
-    });
-    if (currentParagraph.length > 0) finalOutput.push(<p key={`p-${finalOutput.length}`}>{currentParagraph.map((s, si) => <React.Fragment key={si}>{s}</React.Fragment>)}</p>);
+    };
 
-    return finalOutput.length > 0 ? finalOutput : [<p key="empty">{content || ""}</p>];
+    processSegment(processedJsx); // Procesar el resultado anidado
+
+    // Añadir el último párrafo si tiene contenido
+    if (currentParagraphContent.length > 0) {
+        finalOutput.push(<p key={`p-${finalOutput.length}`}>{currentParagraphContent}</p>);
+    }
+
+    // Devolver los párrafos o un párrafo vacío si no hay nada
+    return finalOutput.length > 0 ? finalOutput : [<p key="empty-content"></p>];
 };
 
 
@@ -213,21 +194,29 @@ const renderHighlightedContent = (
 const ArticleContent: React.FC<ArticleContentProps> = ({
     title, content, author, date, activeFilters, entities, adjectives, sentiment, sources
 }) => {
+    // Usar useMemo para evitar recalcular en cada render si las props no cambian
     const processedContent = useMemo(() => renderHighlightedContent(
         content, activeFilters, entities, adjectives, sentiment, sources
-    ), [content, activeFilters, entities, adjectives, sentiment, sources]);
+    ), [content, activeFilters, entities, adjectives, sentiment, sources]); // Dependencias correctas
 
     return (
-        <article className="bg-white rounded-lg p-4 md:p-6 shadow-sm">
+        // Contenedor principal del artículo
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border"> {/* Añadido borde sutil */}
+            {/* Título */}
             <h1 className="text-xl md:text-2xl font-bold mb-2 text-gray-900">{title}</h1>
+            {/* Metadata */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mb-6">
                 <span>Por: <span className="font-medium text-gray-700">{author || 'Desconocido'}</span></span>
                 <span>Fecha: <span className="font-medium text-gray-700">{date || 'N/A'}</span></span>
             </div>
-            <div className="prose prose-sm sm:prose-base max-w-none whitespace-pre-wrap text-gray-800">
+            {/* Contenido Procesado */}
+            {/* prose-sm sm:prose-base aplica estilos de tipografía base */}
+            {/* max-w-none evita que prose limite el ancho */}
+            {/* whitespace-pre-wrap preserva saltos de línea y espacios */}
+            <div className="prose prose-sm sm:prose-base max-w-none whitespace-pre-wrap text-gray-800 leading-relaxed"> {/* Mejorado line-height */}
                 {processedContent}
             </div>
-        </article>
+        </div>
     );
 };
 
