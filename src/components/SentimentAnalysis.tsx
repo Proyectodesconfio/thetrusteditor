@@ -5,12 +5,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faSmile, faMeh, faFrown, // Sentiment icons
   faQuestionCircle,         // Fallback icon
-  faQuoteLeft, faQuoteRight  // Quote icons
+  faQuoteLeft               // Quote icon (faQuoteRight REMOVED)
 } from '@fortawesome/free-solid-svg-icons';
 
 // --- Type Imports ---
 // Import necessary types from the central types file
-// Ensure HighestScoringSentence is exported from ../types
 import type { ArticleSentiment, HighestScoringSentence } from '../types';
 
 // --- Display Configuration ---
@@ -30,13 +29,13 @@ type SentimentDisplayConfig = {
 const getSentimentDisplayInfo = (label: 'POS' | 'NEU' | 'NEG' | null | undefined): SentimentDisplayConfig => {
     switch (label) {
         case 'POS':
-            return { label: 'Positivo', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-300', icon: faSmile };
+            return { label: 'Positivo', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-400', icon: faSmile }; // Ajustado borderColor
         case 'NEU':
-            return { label: 'Neutro', color: 'text-gray-500', bgColor: 'bg-gray-50', borderColor: 'border-gray-300', icon: faMeh };
+            return { label: 'Neutro', color: 'text-gray-600', bgColor: 'bg-gray-100', borderColor: 'border-gray-400', icon: faMeh }; // Ajustado color y borderColor
         case 'NEG':
-            return { label: 'Negativo', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-300', icon: faFrown };
+            return { label: 'Negativo', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-400', icon: faFrown }; // Ajustado borderColor
         default: // Fallback for null, undefined, or unexpected values
-            return { label: 'N/A', color: 'text-gray-400', bgColor: 'bg-gray-100', borderColor: 'border-gray-200', icon: faQuestionCircle };
+            return { label: 'N/A', color: 'text-gray-400', bgColor: 'bg-gray-100', borderColor: 'border-gray-300', icon: faQuestionCircle };
     }
 };
 
@@ -56,45 +55,44 @@ interface SentimentAnalysisProps {
  */
 export default function SentimentAnalysis({ sentiment }: SentimentAnalysisProps) {
 
-    // Render placeholder if sentiment data is missing
-    if (!sentiment) {
+    // Render placeholder if sentiment data is missing or incomplete
+    if (!sentiment || !sentiment.global_sentiment) { // Chequeo más robusto
         return (
-            <div className="bg-white rounded-lg p-6 shadow-sm border"> {/* Added border */}
-                <h3 className="text-lg font-medium mb-2 text-gray-700">Análisis de Sentimiento</h3> {/* Adjusted size */}
-                <p className="text-sm text-gray-500 italic">Datos no disponibles.</p>
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">Análisis de Sentimiento</h3>
+                <p className="text-sm text-gray-500 italic">Datos de sentimiento no disponibles.</p>
             </div>
         );
     }
 
     // --- Extract and Prepare Data ---
-    const globalSentimentInfo = getSentimentDisplayInfo(sentiment.global_sentiment?.[0]);
-    const globalScore = sentiment.global_sentiment?.[1];
+    const globalSentimentInfo = getSentimentDisplayInfo(sentiment.global_sentiment[0]); // Acceso directo al label
+    const globalScore = sentiment.global_sentiment[1]; // Acceso directo a la confianza
 
     const titleSentimentInfo = getSentimentDisplayInfo(sentiment.title_sentiment?.label);
     const titleScores = sentiment.title_sentiment?.scores;
 
-    // Destructure highest scoring sentences safely, providing fallback empty object
-    const { POS, NEU, NEG } = sentiment.highest_scoring_sentence_per_label || {};
+    // Destructure highest scoring sentences safely.
+    // Si `highest_scoring_sentence_per_label` es undefined, POS, NEU, NEG serán undefined.
+    const POS = sentiment.highest_scoring_sentence_per_label?.POS;
+    const NEU = sentiment.highest_scoring_sentence_per_label?.NEU;
+    const NEG = sentiment.highest_scoring_sentence_per_label?.NEG;
 
     // --- Render Component ---
     return (
-        // Card container
-        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border"> {/* Added border */}
-            {/* Main Title */}
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Análisis de Sentimiento</h3> {/* Adjusted size */}
+        <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+            <h3 className="text-lg font-semibold mb-5 text-gray-800">Análisis de Sentimiento</h3>
 
             {/* Global Sentiment Section */}
-            <div className="mb-5 border-b border-gray-200 pb-4"> {/* Adjusted spacing/border */}
+            <div className="mb-5 border-b border-gray-200 pb-4">
                 <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Sentimiento Global</h4>
                 <div className="flex items-center gap-3">
-                    {/* Global Sentiment Icon */}
                     <FontAwesomeIcon
                         icon={globalSentimentInfo.icon}
-                        className={`w-7 h-7 ${globalSentimentInfo.color}`} // Adjusted size slightly
+                        className={`w-7 h-7 ${globalSentimentInfo.color}`}
                     />
-                    {/* Global Sentiment Label and Score */}
                     <div>
-                        <span className={`block text-base font-semibold ${globalSentimentInfo.color}`}> {/* Adjusted size */}
+                        <span className={`block text-base font-semibold ${globalSentimentInfo.color}`}>
                             {globalSentimentInfo.label}
                         </span>
                         {typeof globalScore === 'number' && (
@@ -107,82 +105,74 @@ export default function SentimentAnalysis({ sentiment }: SentimentAnalysisProps)
             </div>
 
             {/* Title Sentiment Section */}
-            <div className="mb-5 border-b border-gray-200 pb-4"> {/* Adjusted spacing/border */}
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Sentimiento del Título</h4>
-                 <div className="flex items-center gap-2 mb-1"> {/* Icon and Label */}
-                     <FontAwesomeIcon
-                        icon={titleSentimentInfo.icon}
-                        className={`w-3.5 h-3.5 ${titleSentimentInfo.color}`} // Adjusted size
-                    />
-                    <span className={`text-sm font-medium ${titleSentimentInfo.color}`}>
-                        {titleSentimentInfo.label}
-                    </span>
-                 </div>
-                 {/* Title Score Breakdown (Optional) */}
-                 {titleScores && (
-                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 pl-5"> {/* Indent scores */}
-                        <span>POS: {(titleScores.POS * 100).toFixed(0)}%</span>
-                        <span>NEU: {(titleScores.NEU * 100).toFixed(0)}%</span>
-                        <span>NEG: {(titleScores.NEG * 100).toFixed(0)}%</span>
-                     </div>
-                 )}
-            </div>
+            {/* Solo renderizar si hay datos de sentimiento del título */}
+            {sentiment.title_sentiment && (
+                <div className="mb-5 border-b border-gray-200 pb-4">
+                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Sentimiento del Título</h4>
+                    <div className="flex items-center gap-2 mb-1">
+                        <FontAwesomeIcon
+                            icon={titleSentimentInfo.icon}
+                            className={`w-4 h-4 ${titleSentimentInfo.color}`} // Tamaño ajustado
+                        />
+                        <span className={`text-sm font-medium ${titleSentimentInfo.color}`}>
+                            {titleSentimentInfo.label}
+                        </span>
+                    </div>
+                    {titleScores && (
+                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 pl-[22px]"> {/* Ajustado padding para alinear con el icono */}
+                            <span>POS: {(titleScores.POS * 100).toFixed(0)}%</span>
+                            <span>NEU: {(titleScores.NEU * 100).toFixed(0)}%</span>
+                            <span>NEG: {(titleScores.NEG * 100).toFixed(0)}%</span>
+                         </div>
+                    )}
+                </div>
+            )}
+
 
              {/* Highest Scoring Sentences Section */}
-            <div>
-                 <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Frases Destacadas</h4>
-                 <div className="space-y-3">
-                     {/* Render each sentence type using the helper component */}
-                     <HighestScoreDisplay sentenceData={POS} type="POS" />
-                     <HighestScoreDisplay sentenceData={NEU} type="NEU" />
-                     <HighestScoreDisplay sentenceData={NEG} type="NEG" />
-                 </div>
-            </div>
+            {(POS || NEU || NEG) && ( // Solo mostrar sección si hay al menos una frase
+                <div>
+                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Frases Destacadas</h4>
+                     <div className="space-y-3">
+                         <HighestScoreDisplay sentenceData={POS} type="POS" />
+                         <HighestScoreDisplay sentenceData={NEU} type="NEU" />
+                         <HighestScoreDisplay sentenceData={NEG} type="NEG" />
+                     </div>
+                </div>
+            )}
 
-        </div> // End Card container
+        </div>
     );
 }
 
 
 // --- Helper Component for Highest Scoring Sentence ---
 
-/** Props for the HighestScoreDisplay helper component. */
 interface HighestScoreDisplayProps {
-    /** The data for the highest scoring sentence, or null/undefined if none exists for the type. */
     sentenceData: HighestScoringSentence | undefined | null;
-    /** The sentiment type ('POS', 'NEU', 'NEG') this component represents. */
     type: 'POS' | 'NEU' | 'NEG';
 }
 
-/**
- * Renders a single highest-scoring sentence entry with appropriate styling.
- * Returns null if no sentence data is provided.
- */
 function HighestScoreDisplay({ sentenceData, type }: HighestScoreDisplayProps) {
-    // Don't render anything if sentence data is missing
-    if (!sentenceData?.sentence) { // Check specifically for sentence text
+    // No renderizar si no hay oración o la confianza es inválida
+    if (!sentenceData?.sentence || typeof sentenceData.score !== 'number') {
         return null;
     }
 
-    // Get display configuration based on the sentiment type
     const config = getSentimentDisplayInfo(type);
-    // Limit sentence length for display
-    const displaySentence = sentenceData.sentence.length > 120 // Increased limit slightly
-        ? `${sentenceData.sentence.substring(0, 117)}...`
+    // Limitar longitud de la oración para visualización
+    const displaySentence = sentenceData.sentence.length > 120
+        ? `${sentenceData.sentence.substring(0, 117).trim()}...` // trim() para evitar "..." después de un espacio
         : sentenceData.sentence;
 
     return (
-        // Container with left border indicating sentiment type
-        <div className={`border-l-4 ${config.borderColor ?? 'border-gray-200'} pl-3 py-1.5 ${config.bgColor ?? 'bg-gray-50'} rounded-r-md`}> {/* Use borderColor */}
-             {/* Quoted sentence */}
-             <blockquote className="text-xs italic text-gray-700 mb-1 leading-snug relative pl-3"> {/* Use blockquote, adjust line height */}
-                 <FontAwesomeIcon icon={faQuoteLeft} className="absolute left-0 top-0.5 h-2 w-2 opacity-40"/>
+        <div className={`border-l-4 ${config.borderColor} ${config.bgColor} rounded-r-md p-2.5 shadow-sm`}> {/* Ajustado padding y sombra */}
+             <blockquote className="text-xs italic text-gray-700 mb-1 leading-snug relative pl-4"> {/* Ajustado padding izquierdo */}
+                 <FontAwesomeIcon icon={faQuoteLeft} className="absolute left-0 top-0.5 h-2.5 w-2.5 text-gray-400 opacity-70"/> {/* Color y opacidad ajustados */}
                  {displaySentence}
-                 {/* <FontAwesomeIcon icon={faQuoteRight} className="ml-1 opacity-50"/> */} {/* Right quote optional */}
              </blockquote>
-             {/* Sentiment Label and Score */}
              <span className={`text-xs font-medium ${config.color}`}>
-                 ({config.label} - Confianza: {(sentenceData.score * 100).toFixed(1)}%) {/* Changed Score to Confianza */}
+                 ({config.label} - Confianza: {(sentenceData.score * 100).toFixed(1)}%)
              </span>
         </div>
     );

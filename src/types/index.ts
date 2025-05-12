@@ -1,9 +1,9 @@
 // src/types/index.ts
 
-// --- Sentiment Analysis Types ---
+// --- Tipos de Análisis de Sentimiento ---
 
 /**
- * Represents the sentiment analysis results for a specific text fragment (like a sentence or title).
+ * Representa los resultados del análisis de sentimiento para un fragmento de texto específico (como una oración o título).
  */
 interface SentimentScore {
   label: 'POS' | 'NEU' | 'NEG';
@@ -15,9 +15,9 @@ interface SentimentScore {
 }
 
 /**
- * Represents the sentence with the highest score for a specific sentiment label.
+ * Representa la oración con la puntuación más alta para una etiqueta de sentimiento específica.
  */
-interface HighestScoringSentence {
+export interface HighestScoringSentence {
   score: number;
   start_char: number;
   end_char: number;
@@ -25,101 +25,102 @@ interface HighestScoringSentence {
 }
 
 /**
- * Represents the complete sentiment analysis results for an article.
- * This structure is expected to be present in every article.
+ * Representa los resultados completos del análisis de sentimiento para un artículo.
+ * Se espera que esta estructura esté presente en cada artículo.
  */
 export interface ArticleSentiment {
-  global_sentiment: [ 'POS' | 'NEU' | 'NEG', number ];
+  global_sentiment: [ 'POS' | 'NEU' | 'NEG', number ]; // [Etiqueta, Confianza]
   highest_scoring_sentence_per_label: {
-    POS: HighestScoringSentence;
-    NEU: HighestScoringSentence;
-    NEG: HighestScoringSentence;
+    POS?: HighestScoringSentence; // Marcado como opcional por si no hay ninguna frase positiva
+    NEU?: HighestScoringSentence; // Marcado como opcional
+    NEG?: HighestScoringSentence; // Marcado como opcional
   };
-  title_sentiment: SentimentScore;
+  title_sentiment?: SentimentScore; // Marcado como opcional
 }
 
-// --- Source Citation Types ---
+// --- Tipos de Citación de Fuentes ---
 
-/** Represents the components of a source citation. */
+/** Representa los componentes de una citación de fuente. */
 interface SourceCitationComponents {
-  afirmacion: { // The actual statement/quote
+  afirmacion: { // La declaración/cita real
     text: string;
     start_char: number;
     end_char: number;
     label: "Afirmacion";
   };
-  conector?: { // Optional connecting verb/phrase
+  conector?: { // Verbo/frase de conexión opcional
     text: string;
     start_char: number;
     end_char: number;
     label: "Conector";
   };
-  referenciado?: { // Optional source/person being referenced
+  referenciado?: { // Fuente/persona referenciada opcional
     text: string;
     start_char: number;
     end_char: number;
     label: "Referenciado";
   };
-  // Add other potential components if they exist based on your data model
+  // Añadir otros componentes potenciales si existen basados en el modelo de datos
 }
 
 /**
- * Represents a single identified source citation within the article,
- * including its position and components.
+ * Representa una única citación de fuente identificada dentro del artículo,
+ * incluyendo su posición y componentes.
  */
 export interface SourceCitation {
-  text: string; // The full text of the detected source/quote
+  text: string; // El texto completo de la fuente/cita detectada
   start_char: number;
   end_char: number;
   length: number;
-  pattern: string; // e.g., "Q.VP" - pattern identifier
+  pattern: string; // ej., "Q.VP" - identificador de patrón
   explicit: boolean;
   components: SourceCitationComponents;
 }
 
 
-// --- Main Article Type ---
+// --- Tipo Principal del Artículo ---
 
 /**
- * Represents a single news article and its associated metadata and analysis results.
+ * Representa un único artículo de noticias y sus metadatos y resultados de análisis asociados.
  */
 export interface Article {
+  // Metadatos básicos del artículo
   id: string;
-  hora: string;
+  hora?: string; // Opcional si puede faltar
   link_noticia: string;
-  link_foto: string;
-  autor: string;
-  categorias: string[];
+  link_foto?: string; // Opcional
+  autor?: string; // Opcional
+  categorias?: string[]; // Opcional
   cuerpo: string;
-  volanta: string;
-  fecha: string;
-  fecha_resumen: string;
-  etiquetas: string[];
+  volanta?: string; // Opcional
+  fecha: string; // Fecha principal de publicación/modificación
+  fecha_resumen?: string; // Opcional, quizás fecha original si 'fecha' cambia
+  etiquetas?: string[]; // Opcional
   titulo: string;
-  resumen: string;
-  medio: string;
+  resumen?: string; // Opcional
+  medio?: string; // Opcional
 
-  /** Section the article belongs to. Mark as optional if it might be missing. */
+  /** Sección a la que pertenece el artículo. Opcional si puede faltar. */
   seccion?: string;
 
-  // --- Analysis Fields ---
-  /** Detailed metrics calculated for the article (optional). */
+  // --- Campos de Análisis ---
+  /** Métricas detalladas calculadas para el artículo (opcional). */
   metrics?: ArticleAnalysisMetrics;
-  /** Detailed sentiment analysis results for the article (required). */
+  /** Resultados detallados del análisis de sentimiento (se asume requerido). */
   sentiment: ArticleSentiment;
-  /** List of identified source citations within the article (optional). */
-  sources?: SourceCitation[]; // Updated to use the detailed SourceCitation type
-  /** Status indicator (e.g., 'reviewed', 'pending') (optional). */
+  /** Lista de citaciones de fuente identificadas dentro del artículo (opcional). */
+  sources?: SourceCitation[];
+  /** Indicador de estado (ej., 'reviewed', 'pending') (opcional). */
   status?: string;
 
-  // --- Detailed NLP Analysis Results (Optional) ---
+  // --- Resultados Detallados de NLP (Opcional) ---
   adjectives?: {
-    adjectives_freq: [string, number][];
-    adjectives_list: {
+    adjectives_freq?: [string, number][]; // Frecuencia de adjetivos (opcional)
+    adjectives_list?: {                   // Lista detallada (opcional)
       text: string;
       start_char: number;
       end_char: number;
-      features: {
+      features?: { // Características lingüísticas (opcionales)
         Gender?: string;
         Number?: string;
         VerbForm?: string;
@@ -129,22 +130,22 @@ export interface Article {
     }[];
   };
   entities?: {
-    entities_freq: [string, number][];
-    entities_list: {
+    entities_freq?: [string, number][]; // Frecuencia de entidades (opcional)
+    entities_list?: {                  // Lista detallada (opcional)
       text: string;
-      type: string;
+      type: string; // Tipo de entidad (ej. Persona, Lugar)
       start_char: number;
       end_char: number;
-      sentiment: number;
+      sentiment?: number; // Sentimiento asociado a la entidad (opcional)
     }[];
   };
 }
 
 
-// --- Global Metrics Type ---
+// --- Tipo de Métricas Globales ---
 
 /**
- * Represents global or summary metrics calculated across a collection of articles.
+ * Representa métricas globales o de resumen calculadas sobre una colección de artículos.
  */
 export interface GlobalMetrics {
   authors: number;
@@ -152,72 +153,80 @@ export interface GlobalMetrics {
   reviewed: number;
   pending: number;
   unreviewed: number;
+  // Podrían añadirse otras métricas globales aquí
 }
 
 
-// --- Single Article Analysis Metrics Type ---
+// --- Tipos para Métricas de Análisis de un Solo Artículo ---
 
-/** Generic structure for a metric value with reference comparison. */
+/** Estructura genérica para un valor de métrica con comparación de referencia. */
 interface MetricValue {
-  full_name: string;
-  name: string;
-  reference: number;
-  value: number;
+  full_name: string; // Nombre descriptivo
+  name: string;      // Nombre corto/clave
+  reference?: number; // Valor de referencia/objetivo (opcional)
+  value: number;     // Valor calculado para el artículo
 }
 
-/** Metrics related to adjective usage within an article. */
+/** Métricas relacionadas con el uso de adjetivos dentro de un artículo. */
 interface AdjectiveMetrics {
-  num_adjectives: MetricValue;
-  perc_adjectives: MetricValue;
+  num_adjectives?: MetricValue; // Opcional por si falla el cálculo
+  perc_adjectives?: MetricValue; // Opcional
 }
 
-/** Detailed breakdown of named entity counts within an article. */
+/** Desglose detallado de conteos de entidades nombradas dentro de un artículo. */
 interface EntityMetricsBreakdown {
-  num_entidades: MetricValue;
-  num_entidades_lugar: MetricValue;
-  num_entidades_misc: MetricValue;
-  num_entidades_organizacion: MetricValue;
-  num_entidades_persona: MetricValue;
+  num_entidades?: MetricValue; // Opcional
+  num_entidades_lugar?: MetricValue; // Opcional
+  num_entidades_misc?: MetricValue; // Opcional
+  num_entidades_organizacion?: MetricValue; // Opcional
+  num_entidades_persona?: MetricValue; // Opcional
 }
 
-/** Basic text statistics for an article. */
+/** Estadísticas básicas de texto para un artículo. */
 interface GeneralTextMetrics {
-  num_chars: MetricValue;
-  num_chars_title: MetricValue;
-  num_sentences: MetricValue;
-  num_words: MetricValue;
+  num_chars?: MetricValue; // Opcional
+  num_chars_title?: MetricValue; // Opcional
+  num_sentences?: MetricValue; // Opcional
+  num_words?: MetricValue; // Opcional
 }
 
-/** Overall sentiment scores calculated for the article (numerical metrics). */
+/** Puntuaciones generales de sentimiento calculadas para el artículo (métricas numéricas). */
 interface SentimentMetrics {
-  sentimiento_global_negativo: MetricValue;
-  sentimiento_global_neutro: MetricValue;
-  sentimiento_global_positivo: MetricValue;
+  sentimiento_global_negativo?: MetricValue; // Opcional
+  sentimiento_global_neutro?: MetricValue; // Opcional
+  sentimiento_global_positivo?: MetricValue; // Opcional
 }
 
-/** Represents a single identified *link* source (distinct from citations). */
-// Note: This seems to be for the *metrics* part, not the inline citations.
-interface LinkSource { // Renamed from Source to avoid naming collision
-  link: string;
-  name: string;
+/** Métricas relacionadas con las citaciones de fuentes dentro de un artículo. */
+interface SourceMetrics {
+  // Nombres basados en SourcesMetrics.tsx y datos de ejemplo
+  num_afirmaciones?: MetricValue;
+  num_afirmaciones_explicitas?: MetricValue;
+  num_conectores?: MetricValue;
+  num_conectores_unique?: MetricValue;
+  num_referenciados?: MetricValue;
+  num_referenciados_unique?: MetricValue;
+  // Añadir cualquier otra métrica de fuente si existe
 }
 
 
 /**
- * Represents detailed metrics calculated for a *single* article's content.
- * Likely stored within the `Article.metrics` field.
+ * Representa métricas detalladas calculadas para el contenido de un *único* artículo.
+ * Probablemente almacenado dentro del campo `Article.metrics`.
  */
 export interface ArticleAnalysisMetrics {
-  adjectives: AdjectiveMetrics;
-  entities: EntityMetricsBreakdown;
-  general: GeneralTextMetrics;
-  sentiment: SentimentMetrics; // Metrics about sentiment (counts/scores)
-  sources: LinkSource[]; // List of linked sources (part of metrics)
+  adjectives?: AdjectiveMetrics; // Propiedad opcional por si el análisis falla
+  entities?: EntityMetricsBreakdown; // Propiedad opcional
+  general?: GeneralTextMetrics; // Propiedad opcional
+  sentiment?: SentimentMetrics; // Propiedad opcional
+  sources?: SourceMetrics; // Propiedad opcional - CORREGIDO: Usa SourceMetrics, no LinkSource[]
 }
 
 
-// --- Potentially Redundant Entity Metrics (Commented Out) ---
+// --- Tipos Redundantes (Comentados Correctamente) ---
 /*
+// Este tipo parece redundante o una versión anterior, ya que los conteos
+// detallados por tipo están dentro de ArticleAnalysisMetrics.entities
 export interface EntityMetrics {
   Lugar: number;
   Persona: number;

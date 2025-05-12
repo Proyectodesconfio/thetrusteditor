@@ -1,56 +1,65 @@
 // src/components/articleAnalytics.ts
-import { Article, GlobalMetrics } from '../types'; // Importar Article y el tipo GlobalMetrics
+import { Article, GlobalMetrics } from '../types'; // Importar los tipos necesarios
 
 /**
- * Calculates global summary statistics for a given list of articles,
- * including counts for different review statuses.
+ * Calcula estadísticas globales resumidas para una lista dada de artículos.
+ * Esto incluye el número total de artículos, autores únicos, y conteos
+ * de artículos según su estado de revisión (revisado, pendiente, sin revisión).
  *
- * @param articles - An array of Article objects to analyze.
- * @returns A GlobalMetrics object containing the calculated statistics.
+ * @param articles - Un array de objetos Article para analizar.
+ * @returns Un objeto GlobalMetrics que contiene las estadísticas calculadas.
  */
-// Modificar la firma de la función para que devuelva GlobalMetrics
 export function calculateMetrics(articles: Article[]): GlobalMetrics {
     const totalArticles = articles.length;
-    // Contar autores únicos, asegurándose de filtrar valores vacíos/nulos si es necesario
+
+    // Contar autores únicos.
+    // Se mapean los autores, se filtran los valores falsy (null, undefined, ""),
+    // y luego se usa un Set para obtener solo los únicos, y .size para el conteo.
     const totalAuthors = new Set(articles.map(article => article.autor).filter(Boolean)).size;
-    // Calcular contadores de estado
+
+    // Inicializar contadores para los diferentes estados de revisión.
     let reviewedCount = 0;
     let pendingCount = 0;
     let unreviewedCount = 0;
 
     articles.forEach(article => {
-        // Normalizar el estado para comparación consistente: quitar espacios, minúsculas, default si es nulo/undefined
+        // Normalizar el estado para una comparación consistente:
+        // - Quitar espacios al inicio/final (trim)
+        // - Convertir a minúsculas (toLowerCase)
+        // - Si el estado es null, undefined o una cadena vacía después del trim, se considera 'sin revisión' por defecto.
         const status = article.status?.trim().toLowerCase();
 
-        // *** ¡IMPORTANTE! AJUSTA ESTOS STRINGS EXACTOS SEGÚN TUS DATOS ***
-        // Compara el estado normalizado con los valores esperados
-        if (status === 'reviewed' || status === 'aprobado') { // ¿Usas 'reviewed' o 'aprobado' en tus datos?
+        // --- Clasificación por Estado ---
+        // ¡IMPORTANTE! Asegúrate de que los strings de estado ('reviewed', 'aprobado', etc.)
+        // coincidan exactamente con los valores presentes en tus datos.
+        if (status === 'reviewed' || status === 'aprobado') {
             reviewedCount++;
-        } else if (status === 'pending' || status === 'pendiente') { // ¿Usas 'pending' o 'pendiente'?
+        } else if (status === 'pending' || status === 'pendiente') {
             pendingCount++;
-        // Define cómo quieres contar "Sin revisión". Aquí contamos undefined, null, '', 'unreviewed', 'sin revisión'.
         } else if (status === 'unreviewed' || status === 'sin revisión' || !status) {
-             unreviewedCount++;
-        // ¿Tienes otros estados como 'revisar'/'flagged' que deban contarse diferente o como 'unreviewed'?
-        // else if (status === 'flagged' || status === 'revisar') { /* no contar o contar diferente? */ }
+            // Considera como "sin revisión" los estados explícitos 'unreviewed', 'sin revisión',
+            // o si el estado es falsy (null, undefined, cadena vacía).
+            unreviewedCount++;
+        // Opcional: Manejar otros estados específicos si existen (ej. 'flagged', 'revisar').
+        // else if (status === 'flagged' || status === 'revisar') {
+        //   // Decidir si contarlos como pendientes, sin revisión, o una nueva categoría.
+        //   pendingCount++; // Ejemplo: contar 'flagged' como pendiente
+        // }
         } else {
-            // Por defecto, cualquier otro estado desconocido se cuenta como 'unreviewed'
-            // console.warn(`Estado desconocido en calculateMetrics: '${status}'`); // Log opcional para desarrollo
+            // Cualquier otro estado no reconocido se cuenta como 'sin revisión' por defecto.
+            // Descomentar para depuración si se sospecha de estados inesperados:
+            // console.warn(`[calculateMetrics] Estado desconocido encontrado: '${status}' en artículo ID: ${article.id}. Contado como 'sin revisión'.`);
             unreviewedCount++;
         }
     });
 
-    // Devolver el objeto que coincide con la interfaz GlobalMetrics
+    // Devolver el objeto de métricas globales, asegurando que las claves coincidan
+    // con la interfaz GlobalMetrics definida en src/types/index.ts.
     return {
-        articles: totalArticles,     // Usar la clave 'articles' según GlobalMetrics
-        authors: totalAuthors,       // Usar la clave 'authors' según GlobalMetrics
-        reviewed: reviewedCount,     // Añadir contador de revisados
-        pending: pendingCount,       // Añadir contador de pendientes
-        unreviewed: unreviewedCount, // Añadir contador de sin revisión
+        articles: totalArticles,
+        authors: totalAuthors,
+        reviewed: reviewedCount,
+        pending: pendingCount,
+        unreviewed: unreviewedCount,
     };
 }
-
-// Nota: totalCategories se eliminó porque no está en la interfaz GlobalMetrics estándar
-// Si lo necesitas, deberías añadirlo a la interfaz GlobalMetrics en types/index.ts
-// y añadir `totalCategories: new Set(articles.flatMap(article => article.categorias)).size,`
-// al objeto de retorno arriba.

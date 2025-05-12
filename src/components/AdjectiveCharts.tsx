@@ -1,199 +1,248 @@
-import * as d3 from 'd3';
+// src/components/AdjectiveCharts.tsx
 import { useRef, useEffect } from 'react';
+import { median as d3Median } from 'd3-array';
+import { scaleLinear as d3ScaleLinear } from 'd3-scale';
+import { select as d3Select } from 'd3-selection';
+// Nota: Si se usaran ejes formales de D3, se importaría 'd3-axis'.
+
 import type { Article } from '../types';
 
+// --- Constantes de Estilo (Opcional, para centralizar colores) ---
+const CHART_PRIMARY_COLOR = '#A855F7'; // Púrpura principal
+const CHART_SECONDARY_COLOR = '#E9D5FF'; // Púrpura claro (fondo barra/bins)
+const CHART_TEXT_COLOR = '#6B7280';    // Gris para texto
+const CHART_AXIS_COLOR = '#9CA3AF';    // Gris más claro para líneas de eje
+
+interface AdjectiveChartProps {
+  articles: Article[];
+}
+
 /**
- * Gráfico de distribución de adjetivos que muestra puntos sobre una barra
- * con la mediana resaltada
+ * Gráfico de Distribución de Adjetivos.
+ * Muestra puntos individuales para el porcentaje de adjetivos de cada artículo
+ * sobre una barra horizontal, con la mediana resaltada con una línea vertical.
  */
-export const AdjectivesDistribution = ({ articles }: { articles: Article[] }) => {
+export const AdjectivesDistribution = ({ articles }: AdjectiveChartProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!articles?.length || !containerRef.current) return;
+    // No dibujar si no hay artículos o el contenedor no está listo.
+    if (!articles || articles.length === 0 || !containerRef.current) {
+        // Opcional: Limpiar SVG si estaba dibujado y ahora no hay datos
+        if (svgRef.current) d3Select(svgRef.current).selectAll('*').remove();
+        return;
+    }
 
     const containerWidth = containerRef.current.getBoundingClientRect().width;
+    // Extraer los porcentajes de adjetivos de cada artículo, convirtiéndolos a escala 0-100.
     const percentages = articles.map(
       (a) => (a?.metrics?.adjectives?.perc_adjectives?.value ?? 0) * 100,
     );
 
-    /* -- Gráfico de puntos sobre barra -------------------------------------------------- */
+    // --- Configuración del Gráfico de Puntos ---
     const width = containerWidth;
-    const height = 60;
-    const margin = { top: 20, right: 0, bottom: 10, left: 0 };
+    const height = 60; // Altura fija para este gráfico simple
+    const margin = { top: 20, right: 10, bottom: 10, left: 10 }; // Márgenes ajustados
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
-    const median = d3.median(percentages) ?? 0;
-    const xScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
+    // Calcular la mediana de los porcentajes.
+    const medianValue = d3Median(percentages) ?? 0;
+    // Escala lineal para mapear porcentajes (0-100) al ancho del SVG.
+    const xScale = d3ScaleLinear().domain([0, 100]).range([0, innerWidth]);
 
-    // Limpiar render previo
-    d3.select(svgRef.current).selectAll('*').remove();
+    // Limpiar cualquier renderizado previo del SVG.
+    const svgElement = d3Select(svgRef.current);
+    svgElement.selectAll('*').remove();
 
-    const svg = d3
-      .select(svgRef.current)
+    // Crear el grupo principal del SVG con los márgenes aplicados.
+    const svg = svgElement
       .attr('width', width)
       .attr('height', height)
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Barra base
+    // Barra base horizontal.
     svg
       .append('rect')
       .attr('x', 0)
-      .attr('y', innerHeight / 2 - 2)
+      .attr('y', innerHeight / 2 - 2) // Centrada verticalmente
       .attr('width', innerWidth)
       .attr('height', 4)
-      .attr('rx', 2)
-      .attr('fill', '#E9D5FF');
+      .attr('rx', 2) // Bordes redondeados
+      .attr('fill', CHART_SECONDARY_COLOR);
 
-    // Puntos individuales
+    // Puntos individuales para cada porcentaje de artículo.
     percentages.forEach((p) => {
       svg
         .append('circle')
         .attr('cx', xScale(p))
-        .attr('cy', innerHeight / 2)
+        .attr('cy', innerHeight / 2) // Centrados en la barra
         .attr('r', 3)
-        .attr('fill', '#A855F7');
+        .attr('fill', CHART_PRIMARY_COLOR);
     });
 
-    // Línea y etiqueta de mediana
+    // Línea vertical para la mediana.
     svg
       .append('line')
-      .attr('x1', xScale(median))
-      .attr('x2', xScale(median))
-      .attr('y1', 5)
-      .attr('y2', innerHeight)
-      .attr('stroke', '#A855F7')
-      .attr('stroke-width', 4);
+      .attr('x1', xScale(medianValue))
+      .attr('x2', xScale(medianValue))
+      .attr('y1', 0) // Desde un poco arriba de la barra
+      .attr('y2', innerHeight + 5) // Hasta un poco abajo de la barra
+      .attr('stroke', CHART_PRIMARY_COLOR)
+      .attr('stroke-width', 2); // Ancho ajustado
 
+    // Etiqueta de texto para la mediana.
     svg
       .append('text')
-      .attr('x', xScale(median))
-      .attr('y', 0)
+      .attr('x', xScale(medianValue))
+      .attr('y', -4) // Posición encima de la línea de mediana
       .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('fill', '#6B7280')
-      .text(`Mediana ${median.toFixed(1)}%`);
-  }, [articles]);
+      .style('font-size', '11px') // Estilo de fuente
+      .attr('fill', CHART_TEXT_COLOR)
+      .text(`Mediana: ${medianValue.toFixed(1)}%`);
+
+  }, [articles, containerRef.current]); // Depender de articles y el contenedor actual para redibujar si cambian
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full my-2"> {/* Añadido margen vertical */}
       <svg ref={svgRef} />
     </div>
   );
 };
 
 /**
- * Histograma de adjetivos que muestra la distribución de porcentajes
- * con la mediana resaltada
+ * Histograma de Adjetivos.
+ * Muestra la distribución de los porcentajes de adjetivos en "bins" (rangos),
+ * con la mediana de los datos originales resaltada.
  */
-export const AdjectivesHistogram = ({ articles }: { articles: Article[] }) => {
+export const AdjectivesHistogram = ({ articles }: AdjectiveChartProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!articles?.length || !containerRef.current) return;
+    if (!articles || articles.length === 0 || !containerRef.current) {
+        if (svgRef.current) d3Select(svgRef.current).selectAll('*').remove();
+        return;
+    }
 
     const containerWidth = containerRef.current.getBoundingClientRect().width;
+    // Extraer porcentajes y filtrar aquellos que excedan 100 (si es posible en los datos).
     const percentages = articles
       .map((a) => (a?.metrics?.adjectives?.perc_adjectives?.value ?? 0) * 100)
-      .filter((v) => v <= 100);
+      .filter((v) => v >= 0 && v <= 100); // Asegurar que los % estén entre 0 y 100
 
-    /* -- Histograma -------------------------------------------------------------------- */
-    const bins = Array(20).fill(0);
+    if (percentages.length === 0) { // Si no hay datos válidos después de filtrar
+        if (svgRef.current) d3Select(svgRef.current).selectAll('*').remove();
+        // Opcional: Mostrar un mensaje "No hay datos válidos para el histograma"
+        return;
+    }
+
+    // --- Configuración del Histograma ---
+    const numBins = 20; // Número de "contenedores" o barras en el histograma
+    const binSize = 100 / numBins; // Tamaño de cada bin (ej: 5 para 20 bins en un rango 0-100)
+    const bins = Array(numBins).fill(0); // Array para almacenar el conteo de cada bin
+
+    // Agrupar porcentajes en los bins.
     percentages.forEach((p) => {
-      const idx = Math.min(Math.floor(p / 5), 19);
-      bins[idx]++;
+      const binIndex = Math.min(Math.floor(p / binSize), numBins - 1);
+      bins[binIndex]++;
     });
 
-    const maxBin = Math.max(...bins);
+    const maxBinCount = Math.max(...bins); // El conteo más alto en un solo bin (para la escala Y)
 
+    // --- Dimensiones y Márgenes del SVG ---
     const width = containerWidth;
-    const height = 100;
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const height = 100; // Altura fija
+    const margin = { top: 20, right: 15, bottom: 30, left: 15 }; // Márgenes ajustados
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
-    const xScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
-    const yScale = d3.scaleLinear().domain([0, maxBin]).range([innerHeight, 0]);
+    // Escalas D3.
+    const xScale = d3ScaleLinear().domain([0, 100]).range([0, innerWidth]); // Porcentaje (0-100) a ancho
+    const yScale = d3ScaleLinear().domain([0, maxBinCount]).range([innerHeight, 0]); // Conteo a altura (invertido)
 
-    d3.select(svgRef.current).selectAll('*').remove();
+    // Limpiar SVG.
+    const svgElement = d3Select(svgRef.current);
+    svgElement.selectAll('*').remove();
 
-    const svg = d3
-      .select(svgRef.current)
+    const svg = svgElement
       .attr('width', width)
       .attr('height', height)
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Barras
+    // Dibujar las barras del histograma.
+    const barWidth = innerWidth / numBins - 1; // Ancho de cada barra con un pequeño espacio
     bins.forEach((count, i) => {
+      if (count === 0) return; // No dibujar barras para bins vacíos
       svg
         .append('rect')
-        .attr('x', xScale(i * 5))
+        .attr('x', xScale(i * binSize))
         .attr('y', yScale(count))
-        .attr('width', innerWidth / 20 - 1)
+        .attr('width', barWidth)
         .attr('height', innerHeight - yScale(count))
-        .attr('fill', '#A855F7')
-        .attr('fill-opacity', 0.35)
+        .attr('fill', CHART_PRIMARY_COLOR)
+        .attr('fill-opacity', 0.5) // Opacidad para ver superposiciones si las hubiera
         .attr('rx', 2);
     });
 
-    // Eje X
+    // Eje X (línea base).
     svg
       .append('line')
       .attr('x1', 0)
       .attr('x2', innerWidth)
       .attr('y1', innerHeight)
       .attr('y2', innerHeight)
-      .attr('stroke', '#6B7280')
+      .attr('stroke', CHART_AXIS_COLOR)
       .attr('stroke-width', 1);
 
-    // Marcas X
-    [0, 50, 100].forEach((v) => {
-      svg
+    // Marcas y etiquetas del Eje X (0%, 50%, 100%).
+    [0, 50, 100].forEach((value) => {
+      svg // Línea de marca
         .append('line')
-        .attr('x1', xScale(v))
-        .attr('x2', xScale(v))
+        .attr('x1', xScale(value))
+        .attr('x2', xScale(value))
         .attr('y1', innerHeight)
-        .attr('y2', innerHeight + 5)
-        .attr('stroke', '#9CA3AF')
+        .attr('y2', innerHeight + 4) // Longitud de la marca
+        .attr('stroke', CHART_AXIS_COLOR)
         .attr('stroke-width', 1);
 
-      svg
+      svg // Etiqueta de texto
         .append('text')
-        .attr('x', xScale(v))
-        .attr('y', innerHeight + 15)
+        .attr('x', xScale(value))
+        .attr('y', innerHeight + 16) // Posición debajo de la marca
         .attr('text-anchor', 'middle')
-        .attr('font-size', '12px')
-        .attr('fill', '#6B7280')
-        .text(`${v}%`);
+        .style('font-size', '10px') // Tamaño ajustado
+        .attr('fill', CHART_TEXT_COLOR)
+        .text(`${value}%`);
     });
 
-    const median = d3.median(percentages) ?? 0;
+    // Línea y etiqueta de la Mediana.
+    const medianValue = d3Median(percentages) ?? 0;
     svg
       .append('line')
-      .attr('x1', xScale(median))
-      .attr('x2', xScale(median))
-      .attr('y1', 0)
+      .attr('x1', xScale(medianValue))
+      .attr('x2', xScale(medianValue))
+      .attr('y1', -2) // Desde un poco arriba del área de barras
       .attr('y2', innerHeight)
-      .attr('stroke', '#A855F7')
-      .attr('stroke-width', 2);
+      .attr('stroke', CHART_PRIMARY_COLOR)
+      .attr('stroke-width', 1.5);
 
     svg
       .append('text')
-      .attr('x', xScale(median))
-      .attr('y', -5)
+      .attr('x', xScale(medianValue))
+      .attr('y', -5) // Posición encima de la línea
       .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('fill', '#6B7280')
-      .text(`Mediana ${median.toFixed(1)}%`);
-  }, [articles]);
+      .style('font-size', '11px')
+      .attr('fill', CHART_TEXT_COLOR)
+      .text(`Mediana: ${medianValue.toFixed(1)}%`);
+
+  }, [articles, containerRef.current]);
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full my-2"> {/* Añadido margen vertical */}
       <svg ref={svgRef} />
     </div>
   );
