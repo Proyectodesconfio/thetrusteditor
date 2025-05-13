@@ -38,43 +38,39 @@ export default function EntityMetricsSimple({ entities }: EntityMetricsSimplePro
     return { totalEntities: total, sortedCounts: filteredAndSorted };
   }, [entities?.entities_list]);
 
-  const maxItemsToShow = 4; // Mantener límite opcional
+  const maxItemsToShow = 4;
   const itemsToShow = sortedCounts.slice(0, maxItemsToShow);
 
   return (
-    // Contenedor principal con flex-col
     <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border flex flex-col h-full min-h-[180px]">
-
       {/* Sección Superior: Título y Total */}
-      <div className="flex justify-between items-start mb-4 flex-shrink-0"> {/* Añadido flex-shrink-0 */}
+      <div className="flex justify-between items-start mb-4 flex-shrink-0">
         <h3 className="text-lg md:text-xl font-medium text-gray-800">Entidades</h3>
-        <span className="text-cyan-600 text-2xl font-semibold">
+        <span className="text-cyan-600 text-2xl md:text-3xl font-semibold"> {/* Número total más grande */}
           {totalEntities}
         </span>
       </div>
 
-      {/* Sección Central: Iconos + Números (Ocupa espacio restante) */}
-      {/* Se añade flex-grow aquí para centrar el contenido verticalmente */}
+      {/* Sección Central: Iconos + Números (Centrados y con más peso) */}
       <div className="flex-grow flex items-center justify-center">
-        {/* Contenedor interno para aplicar gap y flex-wrap */}
-        <div className="flex items-center justify-center flex-wrap gap-x-5 gap-y-3"> {/* Ajustado gap */}
+        <div className="flex items-end justify-center flex-wrap gap-x-6 sm:gap-x-8 gap-y-4"> {/* Aumentado gap, items-end para alinear por la base */}
           {itemsToShow.length > 0 ? (
              itemsToShow.map(([type, count]) => (
-                <div key={type} className="flex items-center gap-1.5" title={`${type}: ${count}`}> {/* CAMBIO: Icono al lado del número */}
+                <div key={type} className="flex items-center gap-2" title={`${type}: ${count}`}> {/* Ajustado gap */}
                   <FontAwesomeIcon
                     icon={typeIconMap[type]}
-                    className="w-5 h-5 text-cyan-500" // Tamaño icono ajustado
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-500" // Icono más grande
                   />
-                  <span className="text-base font-medium text-gray-700">{count}</span> {/* Tamaño número ajustado */}
+                  <span className="text-xl sm:text-2xl font-semibold text-gray-700">{count}</span> {/* Número más grande */}
                 </div>
             ))
           ) : (
-            <span className="text-sm text-gray-400">No se encontraron entidades</span>
+            <span className="text-sm text-gray-400 italic">No hay entidades</span>
           )}
         </div>
       </div>
-       {/* Sección Inferior: Vacía */}
-       <div className="flex-shrink-0 h-4"></div> {/* Espacio pequeño opcional al final */}
+       {/* Sección Inferior: Eliminada o vacía */}
+       <div className="flex-shrink-0 h-2"></div> {/* Espacio mínimo al final */}
     </div>
   );
 }

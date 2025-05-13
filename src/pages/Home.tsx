@@ -189,7 +189,7 @@ const Home: React.FC = () => {
           <h1 className="text-4xl font-bold mb-4">The trust editor</h1>
           <p className="text-lg text-gray-600">Una herramienta con IA para ayudar a las redacciones a mejorar las noticias</p>
         </header>
-        <HomeMetrics articles={filteredAndSorted} metrics={metrics} />
+        <HomeMetrics metrics={metrics} />
         <section className="mt-8 md:mt-12">
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 lg:gap-8 mb-6">
             <h2 className="text-xl font-semibold whitespace-nowrap">Notas ({filteredAndSorted.length})</h2>

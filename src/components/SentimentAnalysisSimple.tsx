@@ -65,7 +65,7 @@ export default function SentimentAnalysisSimple({ sentiment }: SentimentAnalysis
     <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border flex flex-col text-center h-full min-h-[180px]">
 
       {/* Título de la tarjeta, empujado hacia arriba */}
-      <h3 className="text-base font-medium text-gray-600 mb-auto flex-shrink-0">Sentimiento Global</h3>
+      <h3 className="text-lg md:text-xl font-medium text-gray-800">Sentimiento Global</h3>
 
       {/* Contenido central: Icono, Etiqueta, Confianza */}
       {/* Este div usa flex-grow para ocupar el espacio y centrar su contenido */}

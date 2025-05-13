@@ -12,27 +12,28 @@ export function mapOutput(out: any): Partial<Article> {
   // Manejo de la estructura de 'adjectives':
   // Intenta acceder a una propiedad 'adjectives' anidada dentro de 'out.adjectives'.
   // Si no existe, utiliza 'out.adjectives' directamente.
-  // Esto permite flexibilidad si la estructura de entrada para 'adjectives' varía.
   const adjectivesData = out.adjectives?.adjectives ?? out.adjectives;
 
   // Manejo similar para la estructura de 'entities'.
   const entitiesData = out.entities?.entities ?? out.entities;
 
-  return {
-    // Resultados del análisis NLP (Procesamiento de Lenguaje Natural)
-    adjectives: adjectivesData, // Datos detallados de adjetivos (frecuencia, lista)
-    entities: entitiesData,     // Datos detallados de entidades (frecuencia, lista)
+  const mappedOutput = {
+    // Resultados del análisis NLP
+    adjectives: adjectivesData,
+    entities: entitiesData,
 
-    // Métricas calculadas para el artículo
+    // Métricas calculadas
     metrics: out.metrics,
 
     // Resultados del análisis de sentimiento
     sentiment: out.sentiment,
 
-    // Lista de citaciones de fuentes identificadas en el texto del artículo
-    sources: out.sources, // Nota: Este 'sources' es el array de SourceCitation
+    // Lista de citaciones de fuentes identificadas
+    sources: out.sources,
 
-    // Estado de revisión del artículo
+    // Estado de revisión del artículo (si está presente en los datos de salida)
     status: out.status,
   };
+
+  return mappedOutput;
 }

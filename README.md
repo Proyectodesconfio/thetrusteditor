@@ -69,38 +69,71 @@ En el archivo `package.json`, encontrarás los siguientes scripts:
 
 NEWS-VIEWER/
 ├── public/ # Archivos estáticos (ej: favicon, index.html base)
+
 ├── src/
+
 │ ├── components/ # Componentes React reutilizables (UI y lógica)
+
 │ │ ├── AdjectiveCharts.tsx
+
 │ │ ├── AdjectivesMetrics.tsx
+
 │ │ ├── ArticleContent.tsx
+
 │ │ ├── ... (otros componentes)
+
 │ ├── data/ # Archivos JSON de datos de entrada
+
 │ │ ├── lavoz_input_04FEB2025.json
+
 │ │ └── lavoz_output_04FEB2025_cleaned.json
+
 │ ├── hooks/ # Hooks personalizados de React
+
 │ ├── pages/ # Componentes de página (corresponden a rutas)
+
 │ │ ├── Home.tsx
+
 │ │ ├── ArticleDetail.tsx
+
 │ │ └── LoadedArticlesPage.tsx
+
 │ ├── services/ # Lógica de servicios, adaptadores de datos
+
 │ │ └── adapters/
+
 │ │ ├── loadArticles.ts
+
 │ │ ├── inputAdapter.ts
+
 │ │ └── outputAdapter.ts
+
 │ ├── types/ # Definiciones de tipos e interfaces de TypeScript
+
 │ │ └── index.ts
+
 │ ├── App.tsx # Componente raíz de la aplicación y configuración de rutas
+
 │ ├── main.tsx # Punto de entrada de la aplicación React
+
 │ └── index.css # Estilos globales y configuración de Tailwind CSS
+
 ├── .eslintrc.cjs # Configuración de ESLint
+
 ├── .gitignore # Archivos y carpetas ignorados por Git
+
 ├── index.html # Plantilla HTML principal
+
 ├── package.json # Metadatos del proyecto y dependencias
+
 ├── postcss.config.js # Configuración de PostCSS (usado por Tailwind)
+
 ├── tailwind.config.js # Configuración de Tailwind CSS
+
 ├── tsconfig.json # Configuración general de TypeScript
+
 ├── tsconfig.node.json # Configuración de TypeScript para el entorno Node (Vite config, etc.)
+
 └── vite.config.ts # Configuración de Vite
 
 

@@ -1,82 +1,55 @@
 // src/components/AdjectivesMetrics.tsx
-import { useMemo } from 'react'; // 'React' import REMOVED, useMemo se importa directamente
+import { useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFont } from '@fortawesome/free-solid-svg-icons';
+import { faFont, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import type { Article, ArticleAnalysisMetrics } from '../types';
 
-// --- Tipos y Mapeos para Características Lingüísticas ---
 interface AdjectivesMetricsProps {
-  /** Métricas de análisis del artículo (contiene num_adjectives, perc_adjectives). */
   metrics: ArticleAnalysisMetrics | undefined | null;
-  /** Datos detallados de adjetivos (lista y frecuencia). */
   adjectives?: Article['adjectives'] | undefined | null;
 }
 
-// Traducciones para las claves de las características (ej. 'Gender' -> 'Género')
-const featureKeyTranslations: Record<string, string> = {
-    Gender: 'Género',
-    Number: 'Número',
-    Degree: 'Grado',
-    VerbForm: 'Forma Verbal',
-    NumType: 'Tipo Numérico',
-    // Añadir más si es necesario
-};
-
-// Traducciones para los valores de las características (ej. 'Masc' -> 'Masculino')
-const featureValueTranslations: Record<string, Record<string, string>> = {
-    Gender: { Masc: 'Masculino', Fem: 'Femenino', Neut: 'Neutro' },
-    Number: { Sing: 'Singular', Plur: 'Plural' },
-    Degree: { Pos: 'Positivo', Cmp: 'Comparativo', Sup: 'Superlativo', Abs: 'Absoluto' },
-    VerbForm: { Part: 'Participio' }, // Solo Participio como ejemplo, añadir otros si existen
-    NumType: { Ord: 'Ordinal', Card: 'Cardinal' }
-    // Añadir más valores si es necesario
-};
-
+// --- FUNCIÓN DE COLOR PARA LA BARRA Y PORCENTAJE ---
 /**
- * Componente para la barra lateral que muestra métricas detalladas y características
- * sobre los adjetivos encontrados en un artículo.
+ * Calcula un color HSL que va de verde a rojo basándose en un porcentaje.
+ * @param percentage - El porcentaje (0 a 100).
+ * @returns Un string de color HSL.
+ * Lógica: 0% de adjetivos = Verde (Hue 120), 100% de adjetivos = Rojo (Hue 0)
+ * Asume que un porcentaje muy alto de adjetivos podría ser menos deseable.
  */
-export default function AdjectivesMetrics({ metrics, adjectives }: AdjectivesMetricsProps) {
-  // --- Extracción de Métricas Generales ---
-  const numAdjectives = metrics?.adjectives?.num_adjectives?.value ?? 0;
-  const percAdjectives = (metrics?.adjectives?.perc_adjectives?.value ?? 0) * 100; // Convertir a porcentaje
+const getPercentageColorHsl = (
+  percentage: number,
+  saturation: number = 70,
+  lightness: number = 50 // Un poco más oscuro para el texto que para el fondo de la barra
+): string => {
+  const normalizedPercent = Math.max(0, Math.min(100, percentage)) / 100;
+  // Hue: 120 (Verde) para 0% -> 0 (Rojo) para 100%
+  const hue = 120 - (normalizedPercent * 120);
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
 
-  // --- Procesamiento de Frecuencia de Adjetivos ---
-  // Obtener el array de frecuencias de forma segura
+
+export default function AdjectivesMetrics({ metrics, adjectives }: AdjectivesMetricsProps) {
+  const [isFrequentAdjectivesExpanded, setIsFrequentAdjectivesExpanded] = useState(false);
+
+  const numAdjectives = metrics?.adjectives?.num_adjectives?.value ?? 0;
+  const percAdjectives = (metrics?.adjectives?.perc_adjectives?.value ?? 0) * 100;
+
   const currentAdjectivesFreq = adjectives?.adjectives_freq || [];
-  // Memoizar la lista ordenada de adjetivos por frecuencia (descendente)
   const sortedAdjectivesFreq = useMemo(() => {
-      return [...currentAdjectivesFreq].sort((a, b) => b[1] - a[1]); // b[1] - a[1] para orden descendente
+      return [...currentAdjectivesFreq].sort((a, b) => b[1] - a[1]);
   }, [currentAdjectivesFreq]);
 
-  // --- Procesamiento de Características Lingüísticas ---
-  // Memoizar el conteo de cada valor para cada característica lingüística
-  const featureCounts = useMemo(() => {
-    if (!adjectives?.adjectives_list || adjectives.adjectives_list.length === 0) {
-        return {}; // Devolver objeto vacío si no hay lista de adjetivos
-    }
-    const counts: Record<string, Record<string, number>> = {}; // Tipado explícito para 'counts'
-    adjectives.adjectives_list.forEach(adj => {
-      // Iterar sobre las características del adjetivo (si existen)
-      Object.entries(adj.features || {}).forEach(([featureKey, featureValue]) => {
-        if (featureValue) { // Asegurar que featureValue no sea null/undefined
-          const valueKey = String(featureValue); // Convertir a string por si acaso
-          // Inicializar si es la primera vez que se ve esta característica/valor
-          if (!counts[featureKey]) counts[featureKey] = {};
-          if (!counts[featureKey][valueKey]) counts[featureKey][valueKey] = 0;
-          counts[featureKey][valueKey]++; // Incrementar contador
-        }
-      });
-    });
-    return counts;
-  }, [adjectives?.adjectives_list]); // Depende de la lista de adjetivos
+  const toggleFrequentAdjectives = () => {
+    setIsFrequentAdjectivesExpanded(!isFrequentAdjectivesExpanded);
+  };
 
-  // --- Renderizado del Componente ---
-  // No renderizar nada si no hay datos relevantes (ni métricas ni adjetivos)
-  if (numAdjectives === 0 && sortedAdjectivesFreq.length === 0 && Object.keys(featureCounts).length === 0) {
+  const hasAnyAdjectiveData = numAdjectives > 0 || sortedAdjectivesFreq.length > 0;
+
+  if (!hasAnyAdjectiveData && !metrics?.adjectives) {
     return (
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
+            <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-2"> {/* Tamaño ajustado */}
                 <FontAwesomeIcon icon={faFont} className="text-purple-500"/>
                 Adjetivos
             </h3>
@@ -85,75 +58,79 @@ export default function AdjectivesMetrics({ metrics, adjectives }: AdjectivesMet
     );
   }
 
+  // --- COLOR DINÁMICO PARA BARRA Y TEXTO DE PORCENTAJE ---
+  const dynamicBarColor = getPercentageColorHsl(percAdjectives);
+  // Para el fondo de la barra, podríamos querer una versión más clara del mismo color
+  const dynamicBarBgColor = getPercentageColorHsl(percAdjectives, 60, 85); // Menos saturación, más luminosidad
 
   return (
     <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
       {/* Cabecera de la Tarjeta */}
-      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-        <FontAwesomeIcon icon={faFont} className="text-purple-500"/>
+      <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4"> {/* CAMBIO: text-xl */}
+        <FontAwesomeIcon icon={faFont} className="text-purple-500"/> {/* Icono original púrpura */}
         Adjetivos
       </h3>
 
       {/* Sección de Métricas Generales (Conteo y Porcentaje) */}
-      {(numAdjectives > 0 || percAdjectives > 0) && ( // Solo mostrar si hay algún dato
+      {(numAdjectives > 0 || percAdjectives > 0) && (
         <div className="mb-6">
+            {/* --- MODIFICADO: Orden y Estilo de Porcentaje y Conteo --- */}
             <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-gray-700">{numAdjectives} Adjetivos</span>
-            {/* Mostrar porcentaje solo si es mayor que cero para evitar "(0.0%)" si no hay adjetivos */}
-            {percAdjectives > 0 && (
-                <span className="text-purple-600 font-medium">({percAdjectives.toFixed(1)}%)</span>
-            )}
+              {/* Porcentaje a la izquierda, sin paréntesis, con color dinámico */}
+              {percAdjectives > 0 && (
+                  <span className="font-medium" style={{ color: dynamicBarColor }}>
+                    {percAdjectives.toFixed(1)}%
+                  </span>
+              )}
+              {/* Conteo a la derecha */}
+              <span className="text-gray-700">{numAdjectives} Adjetivo{numAdjectives !== 1 ? 's' : ''}</span>
             </div>
-            <div className="bg-purple-100 rounded-full h-2 w-full overflow-hidden">
+            {/* --- MODIFICADO: Barra de Progreso con Color Dinámico --- */}
             <div
-                className="h-2 bg-purple-500 rounded-full transition-all duration-300 ease-in-out" // Añadido transition-all
-                style={{ width: `${Math.min(percAdjectives, 100)}%` }} // Limitar al 100% visualmente
-                title={`${percAdjectives.toFixed(1)}% de adjetivos`}
-            />
+              className="rounded-full h-2.5 w-full overflow-hidden" // Barra más gruesa
+              style={{ backgroundColor: dynamicBarBgColor }} // Fondo de la barra con color dinámico claro
+              title={`${percAdjectives.toFixed(1)}% de adjetivos`}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-in-out"
+                style={{
+                    width: `${Math.min(percAdjectives, 100)}%`,
+                    backgroundColor: dynamicBarColor // Barra activa con color dinámico principal
+                }}
+              />
             </div>
         </div>
       )}
 
-
-      {/* Sección de Desglose de Características Lingüísticas */}
-      {Object.keys(featureCounts).length > 0 && (
-          <div className="space-y-4 mb-6 border-t border-gray-200 pt-4"> {/* Línea divisoria */}
-            {Object.entries(featureCounts)
-                .map(([featureKey, values]) => (
-                <div key={featureKey}>
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                        {featureKeyTranslations[featureKey] || featureKey.replace(/([A-Z])/g, ' $1').trim()} {/* Fallback con espacios */}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                    {Object.entries(values)
-                        .sort(([, countA], [, countB]) => countB - countA) // Ordenar valores por frecuencia
-                        .map(([valueKey, count]) => ( // No es necesario tipar aquí si TS infiere bien
-                        <div key={valueKey} className="flex items-center justify-between text-xs bg-purple-50 hover:bg-purple-100 p-1.5 rounded-md min-w-[90px] flex-grow sm:flex-grow-0 transition-colors"> {/* Ajustado min-width y hover */}
-                            <span className="text-gray-700">
-                                {featureValueTranslations[featureKey]?.[valueKey] || valueKey}
-                            </span>
-                            <span className="text-purple-600 font-semibold ml-2">{count}</span>
-                        </div>
-                        ))}
-                    </div>
-                </div>
-                ))}
-          </div>
-      )}
-
-      {/* Sección de Adjetivos Más Frecuentes */}
+      {/* Sección de Adjetivos Más Frecuentes (Desplegable) */}
       {sortedAdjectivesFreq.length > 0 && (
-          <div className={`${Object.keys(featureCounts).length > 0 ? 'border-t border-gray-200' : ''} pt-4`}> {/* Añadir borde solo si la sección anterior existe */}
-              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Más Frecuentes</h4>
-              <div className="space-y-1.5">
-                  {/* Mostrar hasta 5 adjetivos más frecuentes */}
-                  {sortedAdjectivesFreq.slice(0, 5).map(([adjective, count]) => (
-                      <div key={`${adjective}-${count}`} className="flex items-center justify-between text-sm"> {/* Asegurar key único */}
-                          <span className="text-gray-600 capitalize">{adjective}</span> {/* Capitalizar primera letra */}
-                          <span className="text-purple-600 font-medium">{count}</span>
-                      </div>
-                  ))}
-              </div>
+          <div className={`pt-4 ${ (numAdjectives > 0 || percAdjectives > 0) ? 'border-t border-gray-200' : ''}`}>
+            <button
+              type="button"
+              onClick={toggleFrequentAdjectives}
+              className="w-full flex items-center justify-between text-left py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 group rounded"
+              aria-expanded={isFrequentAdjectivesExpanded}
+              aria-controls="frequent-adjectives-list"
+            >
+              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider group-hover:text-purple-600 transition-colors">
+                Adjetivos Más Frecuentes
+              </h4>
+              <FontAwesomeIcon
+                icon={isFrequentAdjectivesExpanded ? faChevronUp : faChevronDown}
+                className="w-3.5 h-3.5 text-gray-400 group-hover:text-purple-600 transition-transform duration-200"
+              />
+            </button>
+
+            {isFrequentAdjectivesExpanded && (
+                <div id="frequent-adjectives-list" className="mt-3 space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                    {sortedAdjectivesFreq.map(([adjective, count]) => (
+                        <div key={`${adjective}-${count}`} className="flex items-center justify-between text-sm hover:bg-purple-50 px-1 py-0.5 rounded">
+                            <span className="text-gray-700 capitalize">{adjective}</span>
+                            <span className="text-purple-600 font-medium">{count}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
           </div>
       )}
     </div>

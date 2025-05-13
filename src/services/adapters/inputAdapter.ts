@@ -13,7 +13,22 @@ export function mapInput(raw: any): Partial<Article> {
   // Si 'fecha_hora' no está disponible, utiliza los campos 'fecha' y 'hora' individuales como alternativa.
   const [fechaOriginal, horaOriginal] = raw.fecha_hora?.split(',') ?? [raw.fecha, raw.hora];
 
-  return {
+  // --- Determinar el valor para 'status' basado en 'raw.reviewed' y/o 'raw.status' ---
+  let articleStatus: string | undefined = undefined;
+
+  if (typeof raw.status === 'string' && raw.status.trim() !== '') {
+    // Si existe un campo 'status' como string en el input y no está vacío, usarlo.
+    articleStatus = raw.status.trim().toLowerCase();
+  } else if (typeof raw.reviewed === 'boolean') {
+    // Si no hay 'status' string, pero sí 'reviewed' booleano, convertirlo.
+    // Los strings "reviewed" y "unreviewed" deben coincidir con los esperados
+    // en calculateMetrics y getStatusDisplay.
+    articleStatus = raw.reviewed ? 'reviewed' : 'unreviewed';
+  }
+  // Si ninguno de los dos campos está presente o 'raw.reviewed' no es booleano,
+  // 'articleStatus' permanecerá undefined, y la lógica de 'sin revisión' en otros módulos lo tomará.
+
+  const mappedArticle = {
     // --- Identificación y Enlaces ---
     id: raw.id,
     link_noticia: raw.link,
@@ -27,20 +42,19 @@ export function mapInput(raw: any): Partial<Article> {
     resumen: raw.subtitulo, // Se asume que 'subtitulo' es el campo para el resumen
 
     // --- Fechas y Horas ---
-    // Usa la fecha procesada; trim() elimina espacios extra.
     fecha: fechaOriginal?.trim(),
-    // Usa la hora procesada; trim() elimina espacios extra.
     hora: horaOriginal?.trim(),
-    // Mantiene el campo 'fecha_hora' original si es necesario para alguna visualización o referencia.
     fecha_resumen: raw.fecha_hora ?? '',
 
     // --- Clasificación ---
-    // Convierte la cadena de sección (ej. "Deportes / Fútbol") en un array de categorías.
-    // Si raw.seccion es null/undefined, devuelve un array vacío.
-    categorias: raw.seccion?.split('/')?.map((c: string) => c.trim()) ?? [],
-    // Asigna la cadena original de 'seccion' a la propiedad 'seccion' del artículo.
+    categorias: raw.seccion?.split('/')?.map((c: string) => c.trim()).filter(Boolean) ?? [],
     seccion: raw.seccion, // Puede ser undefined
-    etiquetas: raw.etiquetas ?? [], // Usa array vacío si etiquetas es null/undefined
-    medio: raw.medio ?? 'desconocido', // Valor por defecto si 'medio' no está presente
+    etiquetas: raw.etiquetas ?? [],
+    medio: raw.medio ?? 'desconocido',
+
+    // --- Estado de Revisión ---
+    status: articleStatus, // Asignar el estado procesado
   };
+
+  return mappedArticle;
 }
