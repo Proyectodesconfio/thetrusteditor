@@ -70,7 +70,7 @@ export default function ArticleHeader({ article, activeFilters, onFilterChange }
     const getStatusDisplay = (status: string | undefined): { text: string; className: string } => {
         const normalized = status?.trim().toLowerCase() ?? 'sin revisión'; // Normalizar y valor por defecto
          switch (normalized) {
-            case 'aprobado': case 'reviewed': return { text: 'Aprobado', className: 'text-green-600 font-semibold' };
+            case 'aprobado': case 'reviewed': return { text: 'Revisado', className: 'text-green-600 font-semibold' };
             case 'pendiente': case 'pending': return { text: 'Pendiente', className: 'text-amber-600 font-semibold' };
             case 'revisar': case 'flagged': return { text: 'Revisar', className: 'text-red-600 font-semibold' };
             default: return { text: 'Sin revisión', className: 'text-gray-500' };

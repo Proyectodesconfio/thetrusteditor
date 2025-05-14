@@ -192,7 +192,7 @@ const Home: React.FC = () => {
         <HomeMetrics metrics={metrics} />
         <section className="mt-8 md:mt-12">
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 lg:gap-8 mb-6">
-            <h2 className="text-xl font-semibold whitespace-nowrap">Notas ({filteredAndSorted.length})</h2>
+            <h2 className="text-xl font-semibold whitespace-nowrap">Artículos ({filteredAndSorted.length})</h2>
             <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 lg:gap-8 md:ml-auto">
               <select value={selectedAutor} onChange={(e) => setSelectedAutor(e.target.value)} className="w-full md:w-48 px-3 py-2 border rounded-md text-sm bg-white shadow-sm" aria-label="Filtrar por autor">
                 <option value="">Todos los autores</option>
@@ -236,7 +236,7 @@ const Home: React.FC = () => {
           <div ref={observerTargetRef} className="h-16 flex justify-center items-center text-center">
             {visibleCount < filteredAndSorted.length && (
                 <span className="text-gray-500 text-sm animate-pulse">
-                  Cargando más notas...
+                  Cargando más artículos...
                 </span>
             )}
              {visibleArticles.length > 0 && visibleCount >= filteredAndSorted.length && (

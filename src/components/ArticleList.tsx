@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import type { Article } from '../types';
 
 // --- Tipos de Estado para Mostrar ---
-type DisplayStatusLabel = 'Pendiente' | 'Aprobado' | 'Revisar' | 'Sin Revisión';
+type DisplayStatusLabel = 'Pendiente' | 'Revisado' | 'Revisar' | 'Sin Revisión';
 
 // --- Configuración de ESTADO del Artículo ---
 interface StatusDisplayConfig {
@@ -32,7 +32,7 @@ const getStatusConfig = (status: string | undefined): StatusDisplayConfig => {
   switch (normalizedStatus) {
     case 'reviewed':
     case 'aprobado':
-      return { label: 'Aprobado', color: 'text-green-700', bgColor: 'bg-green-100', icon: faCheck, iconColor: 'text-green-600' };
+      return { label: 'Revisado', color: 'text-green-700', bgColor: 'bg-green-100', icon: faCheck, iconColor: 'text-green-600' };
     case 'pending':
     case 'pendiente':
       return { label: 'Pendiente', color: 'text-amber-700', bgColor: 'bg-amber-100', icon: faClock, iconColor: 'text-amber-600' };
