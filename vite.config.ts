@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ command }) => {
   return {
-    base: command === 'build' ? '/news-viewer/' : '/',
+    base: command === 'build' ? '/thetrusteditor/' : '/',
     plugins: [react()],
   };
 });
