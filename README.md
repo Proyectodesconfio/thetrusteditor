@@ -1,4 +1,4 @@
-# News Viewer - The Trust Editor
+# The Trust Editor
 
 Una aplicación React diseñada para visualizar, analizar y editar noticias, proporcionando métricas detalladas e insights para mejorar la calidad del contenido periodístico. Esta herramienta utiliza inteligencia artificial (implícita en los datos de entrada) para ayudar a las redacciones.
 
@@ -31,7 +31,7 @@ Una aplicación React diseñada para visualizar, analizar y editar noticias, pro
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone https://github.com/rusosnith/news-viewer.git
+    git clone https://github.com/Proyectodesconfio/thetrusteditor.git
     ```
 2.  **Navega al directorio del proyecto:**
     ```bash
@@ -151,7 +151,7 @@ NEWS-VIEWER/
 *   **Manejo de Fechas:** [date-fns](https://date-fns.org/)
 *   **Linting:** [ESLint](https://eslint.org/)
 *   **Gestión de Paquetes:** [npm](https://www.npmjs.com/) o [yarn](https://yarnpkg.com/)
-*   **Despliegue:** [GitHub Pages](https://maurosebastian.github.io/news-viewer/) (a través del paquete `gh-pages`)
+*   **Despliegue:** [GitHub Pages](https://github.com/Proyectodesconfio/thetrusteditor) (a través del paquete `gh-pages`)
 
 ## Contribuciones
 

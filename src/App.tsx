@@ -9,7 +9,7 @@ import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/thetrusteditor">
       <ScrollToTop />
       <div className="min-h-screen bg-gray-50">
         <Header />
