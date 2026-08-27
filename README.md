@@ -35,7 +35,7 @@ Una aplicación React diseñada para visualizar, analizar y editar noticias, pro
     ```
 2.  **Navega al directorio del proyecto:**
     ```bash
-    cd news-viewer
+    cd thetrusteditor
     ```
 3.  **Instala las dependencias:**
     ```bash
@@ -53,7 +53,7 @@ Una aplicación React diseñada para visualizar, analizar y editar noticias, pro
     ```bash
     yarn dev
     ```
-    La aplicación estará disponible en `http://localhost:5173` (o el puerto que indique Vite).
+    La aplicación estará disponible en `http://localhost:5173/thetrusteditor/` (o el puerto que indique Vite).
 
 ## Scripts Disponibles
 
